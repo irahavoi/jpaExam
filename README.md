@@ -1,0 +1,1 @@
+Notes and code examples for JPA 2.0 exam

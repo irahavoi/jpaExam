@@ -1,0 +1,37 @@
+* In order to create the basic java project using maven:
+
+mvn -B archetype:generate \
+  -D archetypeGroupId=org.apache.maven.archetypes \
+  -D groupId=com.mycompany.app \
+  -D artifactId=my-app
+
+* Then add jpa/hibernate dependencies to the pom.xml:
+
+    <dependency>
+        <groupId>org.hibernate.javax.persistence</groupId>
+        <artifactId>hibernate-jpa-2.1-api</artifactId>
+        <version>1.0.0.Final</version>
+    </dependency>   
+    <dependency>
+        <groupId>org.hibernate</groupId>
+        <artifactId>hibernate-validator</artifactId>
+        <version>4.3.2.Final</version>
+        <exclusions>
+            <exclusion>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-api</artifactId>
+            </exclusion>
+        </exclusions>
+    </dependency>
+    <dependency>
+        <groupId>org.hibernate</groupId>
+        <artifactId>hibernate-entitymanager</artifactId>
+        <version>4.3.6.Final</version>
+    </dependency>
+    <dependency>
+        <groupId>org.hibernate</groupId>
+        <artifactId>hibernate-ehcache</artifactId>
+        <version>4.3.6.Final</version>
+    </dependency>
+
+* To install dependencies, run: mvn install

@@ -1,4 +1,4 @@
-package com.rahavoi.entity;
+package com.rahavoi.sanbox;
 
 import javax.persistence.Entity;
 import javax.persistence.Id;

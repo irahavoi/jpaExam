@@ -18,7 +18,7 @@ public class App
         Employee employee = new Employee(11);
         
         em.persist(employee);
-        
-        
+        //em.find(Employee.class, 11);        
+        //em.remove(employee);
     }
 }

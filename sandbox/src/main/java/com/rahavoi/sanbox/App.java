@@ -15,9 +15,13 @@ public class App
         EntityManagerFactory emf = Persistence.createEntityManagerFactory("EmployeeFactory");
         EntityManager em = emf.createEntityManager();
         
-        Employee employee = new Employee(11);
+        Employee employee = new Employee();
+        employee.setName("Joe");
+        employee.setSalary(100000);
         
+        em.getTransaction().begin();
         em.persist(employee);
+        em.getTransaction().commit();
         //em.find(Employee.class, 11);        
         //em.remove(employee);
     }

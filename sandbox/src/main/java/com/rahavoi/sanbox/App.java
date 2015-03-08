@@ -16,12 +16,15 @@ public class App
         EntityManager em = emf.createEntityManager();
         
         Employee employee = new Employee();
-        employee.setName("Joe");
-        employee.setSalary(100000);
+        employee.setName("Pokahontas");
+        employee.setSalary(45000);
         
         em.getTransaction().begin();
         em.persist(employee);
+        //Employee e0 = em.find(Employee.class, 0);
         em.getTransaction().commit();
+        //employee.getId();
+        //em.close();
         //em.find(Employee.class, 11);        
         //em.remove(employee);
     }

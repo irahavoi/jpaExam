@@ -1,20 +1,23 @@
 package com.rahavoi.sanbox;
 
 import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
 import javax.persistence.Id;
 
 @Entity
 public class Employee {
 	
 	@Id
-	private int id;
+	@GeneratedValue(strategy=GenerationType.AUTO)
+	private Integer id;
 	private String name;
 	private long salary;
 	
 	public Employee(){}
 
 	public Employee(int id){
-		
+		this.id = id;
 	}
 
 	/**

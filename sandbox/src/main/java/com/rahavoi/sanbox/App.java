@@ -6,7 +6,6 @@ import javax.persistence.Persistence;
 
 /**
  * Hello world!
- *
  */
 public class App 
 {
@@ -22,10 +21,7 @@ public class App
         em.getTransaction().begin();
         em.persist(employee);
         //Employee e0 = em.find(Employee.class, 0);
-        em.getTransaction().commit();
-        //employee.getId();
-        //em.close();
-        //em.find(Employee.class, 11);        
         //em.remove(employee);
+        em.getTransaction().commit();        
     }
 }

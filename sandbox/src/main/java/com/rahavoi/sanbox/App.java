@@ -7,6 +7,8 @@ import javax.persistence.EntityManagerFactory;
 import javax.persistence.Persistence;
 import javax.persistence.TypedQuery;
 
+import com.rahavoi.sanbox.service.EmployeeService;
+
 /**
  * Hello world!
  */
@@ -14,8 +16,10 @@ public class App
 {
     public static void main( String[] args )
     {
-        EntityManagerFactory emf = Persistence.createEntityManagerFactory("EmployeeFactory");
+    	EntityManagerFactory emf = Persistence.createEntityManagerFactory("EmployeeFactory");
         EntityManager em = emf.createEntityManager();
+        
+    	EmployeeService eService = new EmployeeService(em);
         
        // Employee employee = new Employee();
         //employee.setName("Pokahontas");
@@ -27,8 +31,7 @@ public class App
         //em.remove(employee);
         //em.getTransaction().commit();
         
-        TypedQuery<Employee> query = em.createQuery("SELECT e FROM Employee e", Employee.class);
-        List<Employee> employees = query.getResultList();
+        List<Employee> employees = eService.findAllEmployees();
         
         System.out.println("Found " + employees.size() + " employees.");
     }

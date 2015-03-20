@@ -1,9 +1,11 @@
-package com.rahavoi.sanbox;
+package com.rahavoi.entity;
 
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.ManyToOne;
+import javax.persistence.OneToOne;
 
 @Entity
 public class Employee {
@@ -13,6 +15,12 @@ public class Employee {
 	private Integer id;
 	private String name;
 	private long salary;
+	
+	@ManyToOne
+	private Department department;
+	
+	@OneToOne
+	private ParkingSpace parkingSpace;
 	
 	public Employee(){}
 
@@ -61,4 +69,35 @@ public class Employee {
 	public void setSalary(long salary) {
 		this.salary = salary;
 	}
+
+	/**
+	 * @return the department
+	 */
+	public Department getDepartment() {
+		return department;
+	}
+
+	/**
+	 * @param department the department to set
+	 */
+	public void setDepartment(Department department) {
+		this.department = department;
+	}
+
+	/**
+	 * @return the parkingSpace
+	 */
+	public ParkingSpace getParkingSpace() {
+		return parkingSpace;
+	}
+
+	/**
+	 * @param parkingSpace the parkingSpace to set
+	 */
+	public void setParkingSpace(ParkingSpace parkingSpace) {
+		this.parkingSpace = parkingSpace;
+	}
+	
+	
+	
 }

@@ -7,6 +7,8 @@ import javax.persistence.EntityManagerFactory;
 import javax.persistence.Persistence;
 import javax.persistence.TypedQuery;
 
+import com.rahavoi.entity.Employee;
+
 public class EmployeeManager {
 	private EntityManagerFactory emf;
 	private EntityManager em;

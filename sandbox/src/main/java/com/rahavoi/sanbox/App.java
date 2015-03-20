@@ -7,6 +7,7 @@ import javax.persistence.EntityManagerFactory;
 import javax.persistence.Persistence;
 import javax.persistence.TypedQuery;
 
+import com.rahavoi.entity.Employee;
 import com.rahavoi.sanbox.service.EmployeeService;
 
 /**

@@ -5,7 +5,7 @@ import java.util.List;
 import javax.persistence.EntityManager;
 import javax.persistence.TypedQuery;
 
-import com.rahavoi.sanbox.Employee;
+import com.rahavoi.entity.Employee;
 
 public class EmployeeService {
 	private EntityManager em;

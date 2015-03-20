@@ -34,6 +34,9 @@ public class App
         
         List<Employee> employees = eService.findAllEmployees();
         
+        em.close();
+    	emf.close();
+        
         System.out.println("Found " + employees.size() + " employees.");
     }
 }

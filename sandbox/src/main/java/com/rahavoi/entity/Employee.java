@@ -1,9 +1,11 @@
 package com.rahavoi.entity;
 
 import java.util.Collection;
+import java.util.Set;
 
 import javax.persistence.AttributeOverride;
 import javax.persistence.AttributeOverrides;
+import javax.persistence.CollectionTable;
 import javax.persistence.Column;
 import javax.persistence.Embedded;
 import javax.persistence.Entity;
@@ -24,6 +26,9 @@ public class Employee {
 	private Integer id;
 	private String name;
 	private long salary;
+	
+	@CollectionTable(name="nickname")
+	private Set<String> nicknames;
 	
 	@Embedded // <-- optional annotation
 	@AttributeOverrides({

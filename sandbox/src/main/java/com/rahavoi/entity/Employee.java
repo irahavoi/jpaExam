@@ -1,9 +1,14 @@
 package com.rahavoi.entity;
 
+import java.util.Collection;
+
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.JoinTable;
+import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
 import javax.persistence.OneToOne;
 
@@ -21,6 +26,12 @@ public class Employee {
 	
 	@OneToOne
 	private ParkingSpace parkingSpace;
+	
+	@ManyToMany
+	@JoinTable(name="EMP_PROJ",
+			   joinColumns=@JoinColumn(name="EMP_ID"),
+			   inverseJoinColumns=@JoinColumn(name="PROJ_ID"))
+	private Collection<Project> projects;
 	
 	public Employee(){}
 
@@ -96,6 +107,20 @@ public class Employee {
 	 */
 	public void setParkingSpace(ParkingSpace parkingSpace) {
 		this.parkingSpace = parkingSpace;
+	}
+
+	/**
+	 * @return the projects
+	 */
+	public Collection<Project> getProjects() {
+		return projects;
+	}
+
+	/**
+	 * @param projects the projects to set
+	 */
+	public void setProjects(Collection<Project> projects) {
+		this.projects = projects;
 	}
 	
 	

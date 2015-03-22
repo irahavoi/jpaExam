@@ -2,6 +2,9 @@ package com.rahavoi.entity;
 
 import java.util.Collection;
 
+import javax.persistence.AttributeOverride;
+import javax.persistence.AttributeOverrides;
+import javax.persistence.Column;
 import javax.persistence.Embedded;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
@@ -23,6 +26,9 @@ public class Employee {
 	private long salary;
 	
 	@Embedded // <-- optional annotation
+	@AttributeOverrides({
+		@AttributeOverride(name="state", column=@Column(name = "province"))
+	})
 	private Address address;
 	
 	@ManyToOne

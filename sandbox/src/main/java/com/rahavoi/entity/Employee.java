@@ -21,6 +21,8 @@ public class Employee {
 	private String name;
 	private long salary;
 	
+	private Address address;
+	
 	@ManyToOne
 	private Department department;
 	
@@ -79,6 +81,20 @@ public class Employee {
 	 */
 	public void setSalary(long salary) {
 		this.salary = salary;
+	}
+
+	/**
+	 * @return the address
+	 */
+	public Address getAddress() {
+		return address;
+	}
+
+	/**
+	 * @param address the address to set
+	 */
+	public void setAddress(Address address) {
+		this.address = address;
 	}
 
 	/**

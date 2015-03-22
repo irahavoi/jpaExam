@@ -2,6 +2,7 @@ package com.rahavoi.entity;
 
 import java.util.Collection;
 
+import javax.persistence.Embedded;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
@@ -21,6 +22,7 @@ public class Employee {
 	private String name;
 	private long salary;
 	
+	@Embedded // <-- optional annotation
 	private Address address;
 	
 	@ManyToOne

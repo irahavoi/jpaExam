@@ -7,6 +7,7 @@ import javax.persistence.AttributeOverride;
 import javax.persistence.AttributeOverrides;
 import javax.persistence.CollectionTable;
 import javax.persistence.Column;
+import javax.persistence.ElementCollection;
 import javax.persistence.Embedded;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
@@ -29,6 +30,9 @@ public class Employee {
 	
 	@CollectionTable(name="nickname")
 	private Set<String> nicknames;
+	
+	@ElementCollection(targetClass=VacationEntry.class)
+	private Collection vakationBookings;
 	
 	@Embedded // <-- optional annotation
 	@AttributeOverrides({

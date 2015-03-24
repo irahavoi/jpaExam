@@ -18,7 +18,8 @@ public class Department {
 	private String name;
 	
 	@OneToMany(mappedBy="department")
-	@OrderBy("name ASC") //<--Resulting list will be stored by name 
+	@OrderBy("name ASC") //<--Resulting list will be stored by name. (sorting attributes must be comparable)
+						 //If you need more ordering criteria, just add them and separate each with a comma: @OrderBy("status DESC, name ASC")
 	private List<Employee> employees;
 	
 	/**

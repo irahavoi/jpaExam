@@ -1,12 +1,15 @@
 package com.rahavoi.entity;
 
 import java.util.Collection;
+import java.util.List;
 
+import javax.persistence.ElementCollection;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.ManyToMany;
+import javax.persistence.OrderColumn;
 
 @Entity
 public class Project {
@@ -18,6 +21,11 @@ public class Project {
 	
 	@ManyToMany
 	private Collection<Employee> employees;
+	
+	
+	@ElementCollection
+	@OrderColumn(name="task_num") //<-- Column to save the ordered state of the tasks list.
+	private List<String> tasks;
 
 	/**
 	 * @return the id

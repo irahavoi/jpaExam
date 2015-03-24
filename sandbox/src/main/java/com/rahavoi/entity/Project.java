@@ -24,7 +24,7 @@ public class Project {
 	
 	
 	@ElementCollection
-	@OrderColumn(name="task_num") //<-- Column to save the ordered state of the tasks list.
+	@OrderColumn(name="task_num") //<-- Column to save the ordered state of the tasks list
 	private List<String> tasks;
 
 	/**

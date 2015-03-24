@@ -1,12 +1,13 @@
 package com.rahavoi.entity;
 
-import java.util.Collection;
+import java.util.List;
 
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.OneToMany;
+import javax.persistence.OrderBy;
 
 @Entity
 public class Department {
@@ -17,7 +18,8 @@ public class Department {
 	private String name;
 	
 	@OneToMany(mappedBy="department")
-	private Collection<Employee> employees;
+	@OrderBy("name ASC") //<--Resulting list will be stored by name 
+	private List<Employee> employees;
 	
 	/**
 	 * @return the id
@@ -42,14 +44,14 @@ public class Department {
 	/**
 	 * @return the employees
 	 */
-	public Collection<Employee> getEmployees() {
+	public List<Employee> getEmployees() {
 		return employees;
 	}
 
 	/**
 	 * @param employees the employees to set
 	 */
-	public void setEmployees(Collection<Employee> employees) {
+	public void setEmployees(List<Employee> employees) {
 		this.employees = employees;
 	}
 	

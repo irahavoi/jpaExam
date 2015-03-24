@@ -2,6 +2,7 @@ package com.rahavoi.entity;
 
 import java.util.Calendar;
 
+import javax.persistence.AttributeOverride;
 import javax.persistence.Column;
 import javax.persistence.Embeddable;
 import javax.persistence.Temporal;
@@ -13,6 +14,7 @@ public class VacationEntry {
 	private Calendar startDate;
 	
 	@Column(name = "DAYS")
+	@AttributeOverride(name="daysTaken", column = @Column(name = "DAYS_ABS"))
 	private int daysTaken;
 
 	/**

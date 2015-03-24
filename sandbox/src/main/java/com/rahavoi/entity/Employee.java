@@ -28,10 +28,12 @@ public class Employee {
 	private String name;
 	private long salary;
 	
-	@CollectionTable(name="nickname")
+	@CollectionTable(name="nickname") //<--optional. by default the table name would be EMPLOYEE_NICKNAMES
 	private Set<String> nicknames;
 	
-	@ElementCollection(targetClass=VacationEntry.class)
+	@ElementCollection(targetClass=VacationEntry.class) // <-- targetClass is needed only when collection is not generic
+									// <-- @CollectionTable is skipped. Default name will be used: EMPLOYEE_VACATIONBOOKINGS
+									// Join colummn will also be defaulted to EMPLOYEE_ID
 	private Collection vakationBookings;
 	
 	@Embedded // <-- optional annotation

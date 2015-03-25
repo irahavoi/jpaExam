@@ -1,6 +1,7 @@
 package com.rahavoi.entity;
 
 import java.util.Collection;
+import java.util.Map;
 import java.util.Set;
 
 import javax.persistence.AttributeOverride;
@@ -10,6 +11,7 @@ import javax.persistence.Column;
 import javax.persistence.ElementCollection;
 import javax.persistence.Embedded;
 import javax.persistence.Entity;
+import javax.persistence.EnumType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
@@ -17,7 +19,11 @@ import javax.persistence.JoinColumn;
 import javax.persistence.JoinTable;
 import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
+import javax.persistence.MapKeyColumn;
+import javax.persistence.MapKeyEnumerated;
 import javax.persistence.OneToOne;
+
+import com.rahavoi.type.PhoneType;
 
 @Entity
 public class Employee {
@@ -27,6 +33,13 @@ public class Employee {
 	private Integer id;
 	private String name;
 	private long salary;
+	
+	@ElementCollection
+	@CollectionTable(name = "EMP_PHONE")
+	@MapKeyEnumerated(EnumType.STRING)
+	@MapKeyColumn(name = "PHONE_TYPE")
+	@Column(name = "PHONE_NUM")
+	private Map<PhoneType, String> phoneNumbers;
 	
 	@CollectionTable(name="nickname") //<--optional. by default the table name would be EMPLOYEE_NICKNAMES
 	private Set<String> nicknames;
@@ -156,6 +169,48 @@ public class Employee {
 	 */
 	public void setProjects(Collection<Project> projects) {
 		this.projects = projects;
+	}
+
+	/**
+	 * @return the phoneNumbers
+	 */
+	public Map<String, String> getPhoneNumbers() {
+		return phoneNumbers;
+	}
+
+	/**
+	 * @param phoneNumbers the phoneNumbers to set
+	 */
+	public void setPhoneNumbers(Map<String, String> phoneNumbers) {
+		this.phoneNumbers = phoneNumbers;
+	}
+
+	/**
+	 * @return the nicknames
+	 */
+	public Set<String> getNicknames() {
+		return nicknames;
+	}
+
+	/**
+	 * @param nicknames the nicknames to set
+	 */
+	public void setNicknames(Set<String> nicknames) {
+		this.nicknames = nicknames;
+	}
+
+	/**
+	 * @return the vakationBookings
+	 */
+	public Collection getVakationBookings() {
+		return vakationBookings;
+	}
+
+	/**
+	 * @param vakationBookings the vakationBookings to set
+	 */
+	public void setVakationBookings(Collection vakationBookings) {
+		this.vakationBookings = vakationBookings;
 	}
 	
 	

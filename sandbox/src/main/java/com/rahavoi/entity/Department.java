@@ -1,11 +1,18 @@
 package com.rahavoi.entity;
 
 import java.util.List;
+import java.util.Map;
 
+import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.JoinTable;
+import javax.persistence.ManyToMany;
+import javax.persistence.MapKey;
+import javax.persistence.MapKeyColumn;
 import javax.persistence.OneToMany;
 import javax.persistence.OrderBy;
 
@@ -17,10 +24,14 @@ public class Department {
 	private int id;
 	private String name;
 	
-	@OneToMany(mappedBy="department")
-	@OrderBy("name ASC") //<--Resulting list will be stored by name. (sorting attributes must be comparable)
-						 //If you need more ordering criteria, just add them and separate each with a comma: @OrderBy("status DESC, name ASC")
-	private List<Employee> employees;
+	@ManyToMany
+	@JoinTable(name = "DEPT_EMP",
+		joinColumns = @JoinColumn(name = "DEPT_ID"),
+		inverseJoinColumns = @JoinColumn(name = "EMP_ID"))
+	@MapKeyColumn(name = "CUB_ID")
+	//@MapKey(name = "id") //<-- If no map key is specified, entity's id is used by default.
+	private Map<String, Employee> employeesByCubicle;
+	
 	
 	/**
 	 * @return the id
@@ -43,22 +54,17 @@ public class Department {
 	}
 
 	/**
-	 * @return the employees
+	 * @return the employeesByCubicle
 	 */
-	public List<Employee> getEmployees() {
-		return employees;
+	public Map<String, Employee> getEmployeesByCubicle() {
+		return employeesByCubicle;
 	}
 
 	/**
-	 * @param employees the employees to set
+	 * @param employeesByCubicle the employeesByCubicle to set
 	 */
-	public void setEmployees(List<Employee> employees) {
-		this.employees = employees;
+	public void setEmployeesByCubicle(Map<String, Employee> employeesByCubicle) {
+		this.employeesByCubicle = employeesByCubicle;
 	}
-	
-	
-	
-	
-	
 	
 }

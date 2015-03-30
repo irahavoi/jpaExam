@@ -48,7 +48,7 @@ public class App
        employee.setParkingSpace(parking);
        
        List<Employee> allEmployees = new ArrayList<Employee>();
-       department.setEmployees(allEmployees);
+       //department.setEmployees(allEmployees);
        
        em.getTransaction().begin();
        

@@ -1,0 +1,20 @@
+em.getReference() <-- will return the proxy of the asked entity containing info about the key only.
+
+Relationship maintenance is the responsibility of the application. 
+If the entity to be removed is the target of foreign keys in other tables, those foreign keys must be cleared
+for the remove to succeed:
+
+Employee emp = em.find(Employee.class, empId);
+ParkingSpace ps = emp.getParkingSpace();
+emp.setParkingSpace(null);
+em.remove(ps);
+
+Cascading Operations: JPA provides a mechanism to define when operations such as persist should be automatically cascaded across relationships.
+The "cascade" attribute in all the logical relationship annotations(@OneToOne, @OneToMany, @ManyToOne, and @ManyToMany), defines the list of entity manager
+operations to be cascaded:
+	@ManyToOne(cascade = CascadeType.ALL)
+                             CascadeType.DETACH
+                             CascadeType.MERGE
+                             CascadeType.PERSIST
+                             CascadeType.REFRESH
+                             CascadeType.REMOVE

@@ -18,3 +18,57 @@ operations to be cascaded:
                              CascadeType.PERSIST
                              CascadeType.REFRESH
                              CascadeType.REMOVE
+
+Cascade Persist:
+
+@Entity
+public class Employee {
+ // ...
+@ManyToOne(cascade=CascadeType.PERSIST)
+Address address;
+ // ...
+}
+
+As the entity manager encounters the Employee instance and
+adds it to the persistence context, it will navigate across the address relationship looking for a new
+Address entity to manage as well. This frees us from having to persist the Address separately.
+
+Cascade settings are unidirectional.
+
+In the “Persisting an Entity” section, we mentioned that the entity instance is ignored if it is
+already persisted. This is true, but the entity manager will still honor the PERSIST cascade in this
+situation.
+For example, consider our Employee entity again. If the Employee instance is already managed, and a
+new Address instance is set in it, invoking persist() again on the Employee instance will cause the
+Address instance to become managed. No changes will be made to the Employee instance because it
+is already managed.
+
+
+
+Cascade Remove:
+There are only 2 cases when cascading remove operation is appropriate: one-to-one and one-to-many relationships, in which
+there is a clear parent-child relationship. It can’t be blindly applied to all one-to-one and one-tomany
+relationships because the target entities might also be participating in other relationships or
+might make sense as stand-alone entities.
+
+Listing  cascade operations:
+@OneToOne(cascade={CascadeType.PERSIST, CascadeType.REMOVE})
+
+
+Clearing the persistence Context:
+This is usually required only for application-managed and extended persistence contexts that are long-lived
+and have grown too large. For example, consider an application-managed entity manager that issues
+a query returning several hundred entity instances. If you don’t want to close the persistence context, you need to be
+able to clear out the managed entities, or else the persistence context will continue to grow over time.
+	EntityManager.clear();
+This is similar to transaction rollback. It detaches all managed entities. 
+But if this is done in the middle of transaction commit and some changes have been written to the database, they will not be rollbacked.
+
+
+Synchronization with the database.
+	
+
+
+
+
+

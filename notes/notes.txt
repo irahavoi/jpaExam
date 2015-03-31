@@ -65,9 +65,98 @@ This is similar to transaction rollback. It detaches all managed entities.
 But if this is done in the middle of transaction commit and some changes have been written to the database, they will not be rollbacked.
 
 
-Synchronization with the database.
-	
+Synchronization with the database. (page 185 of 538)
+	flush() <-- manual flushing of the persistence context.
+Most persistence providers defer
+SQL generation to the last possible moment for performance reasons, but this is not guaranteed.
 
+A flush basically consists of three components: new entities
+that need to be persisted, changed entities that need to be updated, and removed entities that need to
+be deleted from the database.
+
+If an entity points to another
+entity that is not managed or has been removed, an exception can be thrown.
+
+it is always safer to update relationships pointing to
+entities that will be removed before carrying out the remove() operation. A flush can occur at any time,
+so invoking remove() on an entity without clearing any relationships that point to the removed entity
+could result in an unexpected IllegalStateException exception if the provider decides to flush the
+persistence context before you get around to updating the relationships
+
+Detachment and Merging:
+detached entity is one that is no longer associated with a persistence context. It was
+managed at one point, but the persistence context might have ended or the entity might have been
+transformed so that it has lost its association with the persistence context that used to manage it.
+The persistence context, if there still is one, is no longer tracking the entity.
+Any changes made to the
+entity won’t be persisted to the database, but all the state that was there on the entity when it was
+detached can still be used by the application.
+
+The opposite of detachment is merging. Merging is the process by which an entity manager
+integrates detached entity state into a persistence context. Any changes to entity state that were made
+on the detached entity overwrite the current values in the persistence context. When the transaction
+commits, those changes will be persisted. Merging allows entities to be changed “offline” and then
+have those changes incorporated later on.
+
+Entities become detached when: 
+	* transaction commits;
+	* if the persistence context is closed;
+	* if the stateful session bean with the extended context is removed;
+	* if clear() method is called on the entity manager;
+	* if the detach method is called on the entity manager (detaches the passed entity. cascading might be applied if DETACH or ALL option is set)
+	* if transaction rollback occurs;
+	* when entity is serialized, it's serialized form becomes detached;
+
+
+@ManyToOne and @OneToOne are eagerly loaded by default;
+@oneToMany is lazy loaded by default;
+
+If the entity becomes detached and it's lazy-loaded children have not been accessed, we have a problem: 
+the behavior of accessing an unloaded attribute when the entity is detached is not defined.
+
+Some vendors might attempt to resolve the relationship, while others might simply throw an exception or
+leave the attribute uninitialized.
+
+
+
+Merging detached Entities:
+The merge() operation is used to merge the state of a detached entity into a persistence context.
+changes made to the instance while it was detached will be written to the database.
+
+WRONG:
+public void updateEmployee(Employee emp) {
+  em.merge(emp); //<-- Only changes made to the emp object prior to merging will be persisted
+  emp.setLastAccessTime(new Date()); //<--- THIS CHANGE WILL NOT BE PERISTED. THE ARGUMENT TO merge() DOES NOT BECOME MANAGED. 
+	//A DIFFERENT MANAGED ENTITY IS UPDATED TO MATCH THE ARGUMENT. AND THEN THIS ENTITY IS RETURNED FROMM merge()
+}
+
+
+RIGHT:
+public void updateEmployee(Employee emp) {
+  Employee managedEmp = em.merge(emp);
+  managedEmp.setLastAccessTime(new Date());
+}
+
+When merge() is invoked on a new entity, it behaves similarly to the persist() operation. It adds
+the entity to the persistence context, but instead of adding the original entity instance, it creates a new
+copy and manages that instance instead. The copy that is created by the merge() operation is persisted
+as if the persist() method were invoked on it.
+
+If the entity has a
+relationship to an object that has no persistent identity, the outcome of the merge operation is
+undefined.
+
+The merge() operation can be optionally
+cascaded in these cases to prevent an exception from occurring.
+
+Merging detached entities with relationships can be a tricky operation. Ideally, we want to merge
+the root of an object graph and have all related entities get merged in the process. This can work, but
+only if the MERGE cascade setting has been applied to all relationships in the graph. If it hasn’t, you must
+merge each instance that is the target of a non-cascaded relationship one at a time.
+
+
+
+Working with Detached Entities (page 192)
 
 
 

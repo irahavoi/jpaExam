@@ -157,6 +157,42 @@ merge each instance that is the target of a non-cascaded relationship one at a t
 
 
 Working with Detached Entities (page 192)
+Real-life example:
+There is an Employee entity that has a collection of Departments. EJB fetches all employees and passes them to the Servlet. Servlet sets employees
+as http request attribute and passes it to the jsp. Jsp tries to display department names. Here the problem occurs, since Employees are already detached at the moment 
+when jsp gets them and departments are lazy-loaded.
+
+Possible solutions: 
+1. Eager loading. (mark departments as eagerly loaded)
+2. While employees are still not detached, call getDepartments() method in order to trigger lazy-loading of the departments (ejb level).
+3. Avoiding detachment. 
+	a. Either do not work with entities in your jsp at all (copy entity data into some other structure - Transfer Object pattern. 
+	Or use projection queries to retrieve the state of the entity you need). 
+	b. Or keep persistence context open while the jsp renders so that lazy-loaded relationships could be resolved 
+	(does not work with remote clients or when entities have to be serialized).
+
+In order to keep the transaction-scoped persistence context open, the transaction must be started in the web layer and then re-used at the business layer and
+not committed until jsp is rendered. This pattern is called Transaction View.
+
+@Resource UserTransaction tx;
+@EJB EmployeeService bean;
+
+try {
+  tx.begin();
+  List emps = bean.findAll();
+  request.setAttribute("employees", emps);
+  getServletContext().getRequestDispatcher("/listEmployees.jsp")
+  .forward(request, response);
+} finally {
+  tx.commit();
+}
+// ...
+
+
+The downside of this approach is that the servlet must now manage transaction lifecycle. + this logic must be duplicated across different servlets.
+Another option might be to use extended entity manager which lives as long as it's stateful session bean exists.
+
+
 
 
 

@@ -5,3 +5,41 @@ Instead of selecting from a table, an entity from the application domain model h
 
 SELECT e.name FROM Employee e  <--fetching a field 
 SELECT e.department FROM Employee e <-- fetching a related entity
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+Filtering Results:
+
+SELECT e
+FROM Employee e
+WHERE e.department.name = 'NA42' AND
+      e.address.state IN ('NY', 'CA')
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Projecting results:
+If you do not need the whole entity, you can return only a subset of the properties from an entity:
+SELECT e.name, e.salary 
+FROM Employee e
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Join entities:
+
+SELECT p.number
+FROM Employee e, Phone p
+WHERE e = p.employee AND
+      e.department.name = 'NA 42' AND
+      p.type = 'Cell'
+
+Or using join:
+
+SELECT p.number
+FROM Employee e JOIN e.phones p
+WHERE e.department.name = 'NA42' AND
+   p.type = 'Cell'
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Aggregate queries (p.210 of 538)

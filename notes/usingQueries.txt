@@ -43,3 +43,58 @@ WHERE e.department.name = 'NA42' AND
 --------------------------------------------------------------------------------------------------------------------------------------------------------
 
 Aggregate queries (p.210 of 538)
+There are 5 supported aggregate functions: AVG, COUNT, MIN, MAX, SUM.
+Results may be grouped using GROUP BY and filtered using the HAVING clause..
+
+SELECT d, COUNT(e), MAX(e.salary), AVG(e.salary)
+FROM Department d JOIN d.employees e
+GROUP BY d
+HAVING COUNT(e) >= 5
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Query Parameters:
+There are 2 types of parameters: positional (index) binding and named parameters.
+Positional parameters:
+SELECT e
+FROM Employee e
+WHERE e.department = ?1 AND
+  e.salary > ?2
+
+Named parameters (colon notation):
+SELECT e
+FROM Employee e
+WHERE e.department = :dept AND
+  e.salary > :base
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Defining Queries:
+
+JPA provides Query and TypedQuery interfaces for executing queries. 
+Query is used in cases when result is object.
+TypedQUery is used when typed results are preferred.
+
+Implementation of these interfaced is obtained through EntityManager's factory methods.
+
+A query may be dynamically spesified at runtime or configured in persistence unit metadata (annotation or XML) and referenced by name.
+Named queries are static and unchangeable but are more efficient to execute because the persistence provider can translate JP QL strings into SQL
+once when the app starts as opposed to every time the query is executed (in case of dynamic queries).
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Dynamic Query Definition:
+
+Query engine will have to parse the JP QL string into syntax tree, get the object-relational metadata for each entity in each expression and then
+generate the equivalent SQL. (affects performance). For application issuing many queries, the performance cost of dynamic query processing may be an issue.
+
+Many query engines will cache the translated sql for later use. But not if the app does not use parameter binding and concatenates parameter values directly
+into query strings. 
+
+
+
+
+
+
+
+

@@ -42,13 +42,13 @@ public class Employee {
 	@Column(name = "PHONE_NUM")
 	private Map<PhoneType, String> phoneNumbers;
 	
-	@CollectionTable(name="nickname") //<--optional. by default the table name would be EMPLOYEE_NICKNAMES
-	private Set<String> nicknames;
+	//@CollectionTable(name="nickname") //<--optional. by default the table name would be EMPLOYEE_NICKNAMES
+	//private Set<String> nicknames;
 	
-	@ElementCollection(targetClass=VacationEntry.class) // <-- targetClass is needed only when collection is not generic
+	//@ElementCollection(targetClass=VacationEntry.class) // <-- targetClass is needed only when collection is not generic
 									// <-- @CollectionTable is skipped. Default name will be used: EMPLOYEE_VACATIONBOOKINGS
 									// Join colummn will also be defaulted to EMPLOYEE_ID
-	private Collection vakationBookings;
+	//private Collection vakationBookings;
 	
 	@Embedded // <-- optional annotation
 	@AttributeOverrides({
@@ -186,34 +186,5 @@ public class Employee {
 		this.phoneNumbers = phoneNumbers;
 	}
 
-	/**
-	 * @return the nicknames
-	 */
-	public Set<String> getNicknames() {
-		return nicknames;
-	}
-
-	/**
-	 * @param nicknames the nicknames to set
-	 */
-	public void setNicknames(Set<String> nicknames) {
-		this.nicknames = nicknames;
-	}
-
-	/**
-	 * @return the vakationBookings
-	 */
-	public Collection getVakationBookings() {
-		return vakationBookings;
-	}
-
-	/**
-	 * @param vakationBookings the vakationBookings to set
-	 */
-	public void setVakationBookings(Collection vakationBookings) {
-		this.vakationBookings = vakationBookings;
-	}
-	
-	
 	
 }

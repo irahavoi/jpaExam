@@ -24,6 +24,7 @@ public class QueriesExamples {
        System.out.println(joe + ": " + joeSalary);
        
        
+       
        List<Employee> allEmployees = qe.namedQuery();
        
        for(Employee e : allEmployees){
@@ -70,7 +71,17 @@ public class QueriesExamples {
 	 * @return
 	 */
 	public List<Employee> namedQuery(){
-		return em.createNamedQuery("Employee.findAll", Employee.class)
+		em.getTransaction().begin();
+		List<Employee> result = em.createNamedQuery("Employee.findAll", Employee.class)
 				.getResultList();
+		
+		//Returned entities are managed. If any changes are made on them 
+		//before transaction commits, these changes will be persisted.
+		for(Employee e : result){
+			//e.setName(e.getName() + "test tx");
+		}
+		
+		em.getTransaction().commit();
+		return result;
 	}
 }

@@ -141,7 +141,27 @@ When a query uses a Date or a Calendar as a parameter, it must select the approp
 
 --------------------------------------------------------------------------------------------------------------------------------------------------------
 Executing queries:
-	getSingleResult() <-- For single entity 
-	getResultList()   <-- For List of entities
+	getSingleResult() <-- For single entity (throws NoResultException if nothing is found. If multiple results are found, throws NonUniqueResultException) 
+				These exceptions DO NOT cause the transaction to rollback, if there is one.
+	getResultList()   <-- For List of entities (returns empty list if nothing is found)
 	executeUpdate()   <-- For update and delete queries
+
+Both singleResult and resultList SELECT queries may also specify locking constraints for the database rows impacted by the query through
+	.setLockMethod()
+
+Query and TypedQuery objects may be reused multiple times (caching)
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+Working with Query Results (p. 218 of 538)
+Result types:
+• Basic types, such as String, the primitive types, and JDBC types
+• Entity types
+• An array of Object
+• User-defined types created from a constructor expression
+
+Whenever an entity instance is returned, it becomes managed by the active persistence context. If
+that entity instance is modified and the persistence context is part of a transaction, the changes will be
+persisted to the database. If the entities are detached (out of persistence context scope), they should be first merged
+into a persistence context in order to be persisted.
+
 

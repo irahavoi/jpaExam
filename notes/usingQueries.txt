@@ -131,7 +131,17 @@ however, and may be used instead.
 --------------------------------------------------------------------------------------------------------------------------------------------------------
 Parameter Types:
 
+One of the nicest features of the JP QL: entities may be used as parameters.
+When the query is translated into sql, necessary primary key columns will be inserted into the conditional expression.
+It is not necessary to know how the relationship is mapped to write a query.
 
+Date and Calendar parameters are a special case because they represent both time and date.
+When a query uses a Date or a Calendar as a parameter, it must select the appropriate temporal type for the parameter. 
+	query.setParameter("start", startDate, TemporalType.DATE);
 
-
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+Executing queries:
+	getSingleResult() <-- For single entity 
+	getResultList()   <-- For List of entities
+	executeUpdate()   <-- For update and delete queries
 

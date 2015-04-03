@@ -193,6 +193,15 @@ The downside of this approach is that the servlet must now manage transaction li
 Another option might be to use extended entity manager which lives as long as it's stateful session bean exists.
 
 
+Merging Strategies:
+Usually, when user wants to update some information, he makes changes to the detached entities 
+that are later merged with the existing persistence context:
+	em.merge(myEntity)
+merge() is used to add changes to the existing managed entity.
+Web tier commonly collects changes into detached entities or transfer objects and passes the changed state back to session beans to be
+merged and written to the database.
+
+
 
 
 

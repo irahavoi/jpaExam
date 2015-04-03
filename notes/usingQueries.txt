@@ -1,0 +1,7 @@
+JPA supports two methods for expressing queries to retrieve entities and other persistent data from the database: query languages and the criteria API.
+JP QL - Java persistence Query Language.
+SELECT e FROM Employee e
+Instead of selecting from a table, an entity from the application domain model has been specified instead.
+
+SELECT e.name FROM Employee e  <--fetching a field 
+SELECT e.department FROM Employee e <-- fetching a related entity

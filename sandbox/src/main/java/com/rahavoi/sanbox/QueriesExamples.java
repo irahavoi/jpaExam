@@ -1,8 +1,12 @@
 package com.rahavoi.sanbox;
 
+import java.util.List;
+
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.Persistence;
+
+import com.rahavoi.entity.Employee;
 
 public class QueriesExamples {
 	private EntityManagerFactory emf = Persistence.createEntityManagerFactory("EmployeeFactory");
@@ -11,8 +15,24 @@ public class QueriesExamples {
 	public static void main(String[] args){
        QueriesExamples qe = new QueriesExamples();
        
-       Long salary = qe.insecureInefficientQuery("Pokahontas");
-       System.out.println(salary);
+       String pokahontas = "Pokahontas";
+       Long pokahontasSalary = qe.insecureInefficientQuery(pokahontas);
+       String joe = "Joe";
+       Long joeSalary = qe.namedParametersQuery(joe);
+       
+       System.out.println(pokahontas + ": " + pokahontasSalary);
+       System.out.println(joe + ": " + joeSalary);
+       
+       
+       List<Employee> allEmployees = qe.namedQuery();
+       
+       for(Employee e : allEmployees){
+    	   System.out.println("-------------------------------------------");
+    	   System.out.println("Employee: " + e.getName());
+    	   System.out.println("Salary: " + e.getSalary());
+    	   System.out.println("Department: " + e.getDepartment().getName());
+    	   System.out.println("-------------------------------------------");
+       }
 	}
 	
 	/**
@@ -27,5 +47,30 @@ public class QueriesExamples {
 					   "WHERE e.name = '" + name + "'";
 		
 		return em.createQuery(query, Long.class).getSingleResult();
+	}
+	/**
+	 * Still inefficiient but secure query.
+	 * The parameters ar marshalled using jdbc api and handled directly by database.
+	 * The text of the parameter is properly escaped.
+	 * @param name
+	 * @return
+	 */
+	public Long namedParametersQuery(String name){
+		String query = "SELECT e.salary FROM Employee e " + 
+				   "WHERE e.name = :empName";
+	
+		return em.createQuery(query, Long.class)
+				.setParameter("empName", name)
+				.getSingleResult();
+	}
+	
+	/**
+	 * Uses static named query "Employee.findAll" defined in the Employee class
+	 * using @NamedQuery annotation.
+	 * @return
+	 */
+	public List<Employee> namedQuery(){
+		return em.createNamedQuery("Employee.findAll", Employee.class)
+				.getResultList();
 	}
 }

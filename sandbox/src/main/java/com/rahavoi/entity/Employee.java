@@ -2,8 +2,6 @@ package com.rahavoi.entity;
 
 import java.util.Collection;
 import java.util.Map;
-import java.util.Set;
-
 import javax.persistence.AttributeOverride;
 import javax.persistence.AttributeOverrides;
 import javax.persistence.CascadeType;
@@ -22,10 +20,19 @@ import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
 import javax.persistence.MapKeyColumn;
 import javax.persistence.MapKeyEnumerated;
+import javax.persistence.NamedQueries;
+import javax.persistence.NamedQuery;
 import javax.persistence.OneToOne;
 
 import com.rahavoi.type.PhoneType;
 
+@NamedQueries({
+		@NamedQuery(name = "Employee.findAll", 
+					query = "SELECT e FROM Employee e"),
+		@NamedQuery(name = "Employee.findByPrimaryKey", 
+					query = "SELECT e FROM Employee e WHERE e.id = :id"),
+		@NamedQuery(name = "Employee.findByName", 
+					query = "SELECT e FROM Employee e WHERE e.name = :name") })
 @Entity
 public class Employee {
 	

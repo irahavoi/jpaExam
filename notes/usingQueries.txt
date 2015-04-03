@@ -89,10 +89,47 @@ Query engine will have to parse the JP QL string into syntax tree, get the objec
 generate the equivalent SQL. (affects performance). For application issuing many queries, the performance cost of dynamic query processing may be an issue.
 
 Many query engines will cache the translated sql for later use. But not if the app does not use parameter binding and concatenates parameter values directly
-into query strings. 
+into query strings.
 
 
+Statically defined named queries are recommended especially for frequently executed queries. However if you need a dynamic query, make sure you use parameter binding
+instead of concatenating parameter values in string manually. 
 
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Named Query Definition:
+@NamedQuery annotation is usually put on an entity class:
+
+@NamedQuery(name="findSalaryForNameAndDepartment",
+query="SELECT e.salary " +
+      "FROM Employee e " +
+       "WHERE e.department.name = :deptName AND " +
+        " e.name = :empName")
+
+The annotation  will be processed once at startup and be eexecuted at runtime in query form. 
+The name of the query is scoped to the entire persistence context and must be unique within that scope.
+In order to escape name collisions a common practice is to prefeix the query name with the entity name: "Employee.findAll"
+
+JPA does not say anything about what should happen if 2 queries have the same name. 
+The deployment will fail or one query will overwrite the other.
+
+If more than one query must be defined within the same class, @NamedQueries annotation should be used:
+
+@NamedQueries({
+  @NamedQuery(name="Employee.findAll",
+    query="SELECT e FROM Employee e"),
+  @NamedQuery(name="Employee.findByPrimaryKey",
+    query="SELECT e FROM Employee e WHERE e.id = :id"),
+  @NamedQuery(name="Employee.findByName",
+    query="SELECT e FROM Employee e WHERE e.name = :name")
+})
+
+Named parameters are the most practical choice for named queries because they effectively selfdocument
+the application code that invokes the queries. Positional parameters are still supported,
+however, and may be used instead.
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+Parameter Types:
 
 
 

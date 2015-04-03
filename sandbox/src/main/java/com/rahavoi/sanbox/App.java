@@ -34,8 +34,8 @@ public class App
         EmployeeService eService = new EmployeeService(em);
         
        Employee employee = new Employee();
-       employee.setName("Pokahontas");
-       employee.setSalary(45000);
+       employee.setName("Joe");
+       employee.setSalary(90000);
        
        ParkingSpace parking = new ParkingSpace();
        parking.setLocation("5th floor");

@@ -164,4 +164,14 @@ that entity instance is modified and the persistence context is part of a transa
 persisted to the database. If the entities are detached (out of persistence context scope), they should be first merged
 into a persistence context in order to be persisted.
 
+A consequence of the long-term management of entities with application-managed and extended
+persistence contexts is that executing large queries will cause the persistence context to grow as it
+stores all the managed entity instances that are returned. If many of these persistence contexts are
+holding onto large numbers of managed entities for long periods of time, then memory use may
+become a concern. The clear() method of the EntityManager interface may be used to clear
+application-managed and extended persistence contexts, removing unnecessary managed entities.
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+Untyped Results: (p. 219 of 538)
+
 

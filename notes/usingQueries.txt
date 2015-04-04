@@ -183,6 +183,73 @@ Use NOT_SUPPORTED transaction attribute for the read-only session bean methods.
 Special Result Types: (p.220)
 --------------------------------------------------------------------------------------------------------------------------------------------------------
 Query Paging (p, 222):
+               Query.setFortsResult()
+	       Query.setMaxResult()
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+Querying uncommitted changes:
+	setFlushMode(FlushModeType.AUTO)
+	setFlushMode(FlushModeType.COMMIT) <-- says that queries' data do not overlap and there is no need in flushing persistence context
+setFlushMode can be called on EntityManager or individual queries.
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+Query Timeouts:
+
+If the query is taking too long to execute and a timeout is set on a JTA transaction or on the database,
+the query may be aborted and a transaction will be rollbacked.
+JPA allows to set a timeout on a query:
+
+public Date getLastUserActivity() {
+TypedQuery<Date> lastActive =
+em.createNamedQuery("findLastUserActivity", Date.class);
+lastActive.setHint("javax.persistence.query.timeout", 5000);
+try {
+return lastActive.getSingleResult();
+} catch (QueryTimeoutException e) {
+return null;
+}
+}
+
+QueryTimeoutException does not cause transaction to rollback
+
+
+This setting is not portable. 
+Three options to consider:
+	* property "javax.persistence.query.timeout" is ignored;
+	* property is set and QueryTimeoutException is thrown when query takes too long. transaction is not rollbacked
+	* Property is enabled but the database forses a transaction rollback when the timeout is exceeded. In this case PersisteException will be thrown and 
+	  transaction will be marked for rollback.
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+Bulk operations;
+Bulk Operations should be executed in their own new transaction. Or they should be the 1st operation of the transaction. (in order to quarantee integrity of data)
+
+@TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
+public void assignManager(Department dept, Employee manager) {
+	em.createQuery("UPDATE Employee e " +
+		"SET e.manager = ?1 " +
+		"WHERE e.department = ?2")
+	.setParameter(1, manager)
+	.setParameter(2, dept)
+	.executeUpdate();
+}
+
+@TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
+public void removeEmptyProjects() {
+	em.createQuery("DELETE FROM Project p " +
+	"WHERE p.employees IS EMPTY")
+	.executeUpdate();
+}
+
+Caution:
+
+Native SQL update and delete operations should not be executed on tables mapped by an entity.
+The JP QL operations tell the provider what cached entity state must be invalidated in order to remain consistent
+with the database. Native SQL operations bypass such checks and can quickly lead to situations where the inmemory
+cache is out of date with respect to the database.
+
+
+
+
+
+
 
 
 

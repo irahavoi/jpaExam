@@ -172,6 +172,20 @@ become a concern. The clear() method of the EntityManager interface may be used 
 application-managed and extended persistence contexts, removing unnecessary managed entities.
 
 --------------------------------------------------------------------------------------------------------------------------------------------------------
-Untyped Results: (p. 219 of 538)
+Optimizing read-only queries:
+Do not use transactions if you are performing read-only operations without changing the state of the entities
+(this consumes additional resources in vain). this will help avoid the overhead of creating managed entities.
+
+Use NOT_SUPPORTED transaction attribute for the read-only session bean methods.
+@TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+Special Result Types: (p.220)
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+Query Paging (p, 222):
+
+
+
+
 
 

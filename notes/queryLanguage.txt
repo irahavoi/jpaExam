@@ -1,0 +1,290 @@
+JPA supports two methods for expressing queries to retrieve entities and other persistent data from the database: query languages and the criteria API.
+JP QL - Java persistence Query Language.
+SELECT e FROM Employee e
+Instead of selecting from a table, an entity from the application domain model has been specified instead.
+
+SELECT e.name FROM Employee e  <--fetching a field 
+SELECT e.department FROM Employee e <-- fetching a related entity
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+Filtering Results:
+
+SELECT e
+FROM Employee e
+WHERE e.department.name = 'NA42' AND
+      e.address.state IN ('NY', 'CA')
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Projecting results:
+If you do not need the whole entity, you can return only a subset of the properties from an entity:
+SELECT e.name, e.salary 
+FROM Employee e
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Join entities:
+
+SELECT p.number
+FROM Employee e, Phone p
+WHERE e = p.employee AND
+      e.department.name = 'NA 42' AND
+      p.type = 'Cell'
+
+Or using join:
+
+SELECT p.number
+FROM Employee e JOIN e.phones p
+WHERE e.department.name = 'NA42' AND
+   p.type = 'Cell'
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Aggregate queries (p.210 of 538)
+There are 5 supported aggregate functions: AVG, COUNT, MIN, MAX, SUM.
+Results may be grouped using GROUP BY and filtered using the HAVING clause..
+
+SELECT d, COUNT(e), MAX(e.salary), AVG(e.salary)
+FROM Department d JOIN d.employees e
+GROUP BY d
+HAVING COUNT(e) >= 5
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Query Parameters:
+There are 2 types of parameters: positional (index) binding and named parameters.
+Positional parameters:
+SELECT e
+FROM Employee e
+WHERE e.department = ?1 AND
+  e.salary > ?2
+
+Named parameters (colon notation):
+SELECT e
+FROM Employee e
+WHERE e.department = :dept AND
+  e.salary > :base
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Defining Queries:
+
+JPA provides Query and TypedQuery interfaces for executing queries. 
+Query is used in cases when result is object.
+TypedQUery is used when typed results are preferred.
+
+Implementation of these interfaced is obtained through EntityManager's factory methods.
+
+A query may be dynamically spesified at runtime or configured in persistence unit metadata (annotation or XML) and referenced by name.
+Named queries are static and unchangeable but are more efficient to execute because the persistence provider can translate JP QL strings into SQL
+once when the app starts as opposed to every time the query is executed (in case of dynamic queries).
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Dynamic Query Definition:
+
+Query engine will have to parse the JP QL string into syntax tree, get the object-relational metadata for each entity in each expression and then
+generate the equivalent SQL. (affects performance). For application issuing many queries, the performance cost of dynamic query processing may be an issue.
+
+Many query engines will cache the translated sql for later use. But not if the app does not use parameter binding and concatenates parameter values directly
+into query strings.
+
+
+Statically defined named queries are recommended especially for frequently executed queries. However if you need a dynamic query, make sure you use parameter binding
+instead of concatenating parameter values in string manually. 
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Named Query Definition:
+@NamedQuery annotation is usually put on an entity class:
+
+@NamedQuery(name="findSalaryForNameAndDepartment",
+query="SELECT e.salary " +
+      "FROM Employee e " +
+       "WHERE e.department.name = :deptName AND " +
+        " e.name = :empName")
+
+The annotation  will be processed once at startup and be eexecuted at runtime in query form. 
+The name of the query is scoped to the entire persistence context and must be unique within that scope.
+In order to escape name collisions a common practice is to prefeix the query name with the entity name: "Employee.findAll"
+
+JPA does not say anything about what should happen if 2 queries have the same name. 
+The deployment will fail or one query will overwrite the other.
+
+If more than one query must be defined within the same class, @NamedQueries annotation should be used:
+
+@NamedQueries({
+  @NamedQuery(name="Employee.findAll",
+    query="SELECT e FROM Employee e"),
+  @NamedQuery(name="Employee.findByPrimaryKey",
+    query="SELECT e FROM Employee e WHERE e.id = :id"),
+  @NamedQuery(name="Employee.findByName",
+    query="SELECT e FROM Employee e WHERE e.name = :name")
+})
+
+Named parameters are the most practical choice for named queries because they effectively selfdocument
+the application code that invokes the queries. Positional parameters are still supported,
+however, and may be used instead.
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+Parameter Types:
+
+One of the nicest features of the JP QL: entities may be used as parameters.
+When the query is translated into sql, necessary primary key columns will be inserted into the conditional expression.
+It is not necessary to know how the relationship is mapped to write a query.
+
+Date and Calendar parameters are a special case because they represent both time and date.
+When a query uses a Date or a Calendar as a parameter, it must select the appropriate temporal type for the parameter. 
+	query.setParameter("start", startDate, TemporalType.DATE);
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+Executing queries:
+	getSingleResult() <-- For single entity (throws NoResultException if nothing is found. If multiple results are found, throws NonUniqueResultException) 
+				These exceptions DO NOT cause the transaction to rollback, if there is one.
+	getResultList()   <-- For List of entities (returns empty list if nothing is found)
+	executeUpdate()   <-- For update and delete queries
+
+Both singleResult and resultList SELECT queries may also specify locking constraints for the database rows impacted by the query through
+	.setLockMethod()
+
+Query and TypedQuery objects may be reused multiple times (caching)
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+Working with Query Results (p. 218 of 538)
+Result types:
+• Basic types, such as String, the primitive types, and JDBC types
+• Entity types
+• An array of Object
+• User-defined types created from a constructor expression
+
+Whenever an entity instance is returned, it becomes managed by the active persistence context. If
+that entity instance is modified and the persistence context is part of a transaction, the changes will be
+persisted to the database. If the entities are detached (out of persistence context scope), they should be first merged
+into a persistence context in order to be persisted.
+
+A consequence of the long-term management of entities with application-managed and extended
+persistence contexts is that executing large queries will cause the persistence context to grow as it
+stores all the managed entity instances that are returned. If many of these persistence contexts are
+holding onto large numbers of managed entities for long periods of time, then memory use may
+become a concern. The clear() method of the EntityManager interface may be used to clear
+application-managed and extended persistence contexts, removing unnecessary managed entities.
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+Optimizing read-only queries:
+Do not use transactions if you are performing read-only operations without changing the state of the entities
+(this consumes additional resources in vain). this will help avoid the overhead of creating managed entities.
+
+Use NOT_SUPPORTED transaction attribute for the read-only session bean methods.
+@TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+Special Result Types: (p.220)
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+Query Paging (p, 222):
+               Query.setFortsResult()
+	       Query.setMaxResult()
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+Querying uncommitted changes:
+	setFlushMode(FlushModeType.AUTO)
+	setFlushMode(FlushModeType.COMMIT) <-- says that queries' data do not overlap and there is no need in flushing persistence context
+setFlushMode can be called on EntityManager or individual queries.
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+Query Timeouts:
+
+If the query is taking too long to execute and a timeout is set on a JTA transaction or on the database,
+the query may be aborted and a transaction will be rollbacked.
+JPA allows to set a timeout on a query:
+
+public Date getLastUserActivity() {
+TypedQuery<Date> lastActive =
+em.createNamedQuery("findLastUserActivity", Date.class);
+lastActive.setHint("javax.persistence.query.timeout", 5000);
+try {
+return lastActive.getSingleResult();
+} catch (QueryTimeoutException e) {
+return null;
+}
+}
+
+QueryTimeoutException does not cause transaction to rollback
+
+
+This setting is not portable. 
+Three options to consider:
+	* property "javax.persistence.query.timeout" is ignored;
+	* property is set and QueryTimeoutException is thrown when query takes too long. transaction is not rollbacked
+	* Property is enabled but the database forses a transaction rollback when the timeout is exceeded. In this case PersisteException will be thrown and 
+	  transaction will be marked for rollback.
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+Bulk operations;
+Bulk Operations should be executed in their own new transaction. Or they should be the 1st operation of the transaction. (in order to quarantee integrity of data)
+
+@TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
+public void assignManager(Department dept, Employee manager) {
+	em.createQuery("UPDATE Employee e " +
+		"SET e.manager = ?1 " +
+		"WHERE e.department = ?2")
+	.setParameter(1, manager)
+	.setParameter(2, dept)
+	.executeUpdate();
+}
+
+@TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
+public void removeEmptyProjects() {
+	em.createQuery("DELETE FROM Project p " +
+	"WHERE p.employees IS EMPTY")
+	.executeUpdate();
+}
+
+Caution:
+
+Native SQL update and delete operations should not be executed on tables mapped by an entity.
+The JP QL operations tell the provider what cached entity state must be invalidated in order to remain consistent
+with the database. Native SQL operations bypass such checks and can quickly lead to situations where the inmemory
+cache is out of date with respect to the database.
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+Bulk Delete and Relationships:
+DELETE statements DO NOT CASCADE to related entities. Even if the REMOVE cascade option is set, it will not be followed!
+It is your responsibility that relatioships are correctly updated!
+The persistence provider also does not have control over database constraints: if you try to delete an entity which is a target of a foreign key
+in some other table, you'll get constraint violation error.
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+Query Hints p230.
+Hints allow to add JPA extensions to queries without introducing a new API.
+This includes standard features such as the query timeouts, as well as vendor specific features. 
+
+Every query may have any number of hints, set either as part of @NamedQuery annotation or on the Qeury/TypedQUery interface using setHint().
+The current set of hints enabled for a query may be retriedved with the getHints() method
+
+ query.getHints() <-- returns a map of hints.
+
+In order to simplify portability, vendor providers are required to ignore hints that they do not understand.
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+Query Best Practices (231)
+
+* Named queries are recommended whenever possible. Providers will ofted try to pre-compile JP QL queries to SQL when the app is deployed.
+* Named queries also enforce using query parameters. 
+* Remember that query namespace is global for each persistence unit: avoid name collisions.
+* If you are using queries for reporting purposes only (no changes to the db) consider NOT_SUPPORTED option for transactions.
+* If an entity is expensive to construct due to eager relationships or a complex table mapping, consider selecting individual properties using projection query 
+  instead of retrieving the full entity result. If all you need is employee name and salary, it would be more efficient to retrieve the 2 fields than the whole entity.
+* If portability is important, dont' abuse using vendor-specific hints. THe ideal location for query hints is an xml file. Keep hints decoupled from your code if this is possible.
+* Ensure that bulk updates and deletes are used in ad isolated transaction. 
+* Become familiar with the approach used by your persistence provider for generating different JP QL queries and flushing the persistence context, caching.
+
+
+ 
+
+
+
+
+
+
+
+
+
+

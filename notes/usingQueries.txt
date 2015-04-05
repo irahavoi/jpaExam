@@ -245,7 +245,14 @@ The JP QL operations tell the provider what cached entity state must be invalida
 with the database. Native SQL operations bypass such checks and can quickly lead to situations where the inmemory
 cache is out of date with respect to the database.
 
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+Bulk Delete and Relationships:
+DELETE statements DO NOT CASCADE to related entities. Even if the REMOVE cascade option is set, it will not be followed!
+It is your responsibility that relatioships are correctly updated!
+The persistence provider also does not have control over database constraints: if you try to delete an entity which is a target of a foreign key
+in some other table, you'll get constraint violation error.
 
+p230.
 
 
 

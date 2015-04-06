@@ -178,6 +178,77 @@ if the employee has not been assigned to department, the department (the 2nd ele
 
 ---------------------------------------------------------------------------------------------------------------------------------
 Fetch Joins (p. 250)
+Fetch joins are used for queries optimization and preparing entities for detachment. 
+They allow queries to specify one or more relationships that should be navigated.
+and prefetched by the query engine so that they are not lazy loaded later at runtime.
+
+SELECT e
+FROM Employee e JOIN FETCH e.address
+---------------------------------------------------------------------------------------------------------------------------------
+WHERE Clause:
+
+Input parameters may be specified using positional or named notation:
+
+WHERE e.salary > ?1
+
+or
+
+WHERE e.salary > :sal
+
+
+(the same input parameter can be used multiple times)
+
+
+Expressions:
+---------------------------------------------------------------------------------------------------------------------------------
+BETWEEN
+ result of the expression falls within an inclusive range of values. Numeric, string and Date expressions can be evaluated this way.
+
+SELECT e FROM Employee e WHERE e.salary BETWEEN 40000 AND 45000
+
+The BETWEEN operator can also be negated with the NOT operator.
+---------------------------------------------------------------------------------------------------------------------------------
+LIKE
+ a limited form of string pattern matching.
+ Wildcards - '_' - a single character
+             '%' - multi-character 
+ SELECT d FROM Department d WHERE d.name LIKE '__Eng%' 
+
+ If the pattern string contains an underscore or percent sign that should be literally matched, the
+ESCAPE clause can be used to specify a character that, when prefixing a wildcard character, indicates
+that it should be treated literally:
+
+ SELECT d FROM Department  WHERE d.name LIKE 'QA\_%' ESCAPE '\'
+---------------------------------------------------------------------------------------------------------------------------------
+
+Subqueries (253)
+
+SELECT e FROM Employee e
+WHERE e.salary = (SELECT MAX(emp.salary) FROM Employee emp)
+
+The scope of an identifier variable name begins in the query where it is defined and extends down
+into any subqueries. Identifiers in the main query can be referenced by a subquery, and identifiers
+introduced by a subquery can be referenced by any subquery that it creates. If a subquery declares an
+identifier variable of the same name, it overrides the parent declaration and prevents the subquery from
+referring to the parent variable.
+---------------------------------------------------------------------------------------------------------------------------------
+IN Expressions
+IN expression can be used to check whether a single-valued path expression is a member of a
+collection. The collection can be defined inline as a set of literal values or can be derived from a
+subquery.
+
+SELECT e
+FROM Employee e
+WHERE e.address.state IN ('NY', 'CA')
+
+
+SELECT e
+FROM Employee e
+WHERE e.department IN (SELECT DISTINCT d
+FROM Department d JOIN d.employees de JOIN de.projects p WHERE p.name LIKE 'QA%')
+---------------------------------------------------------------------------------------------------------------------------------
+Collection Expressions (p. 255)
+
 
 
 

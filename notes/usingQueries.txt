@@ -1,1 +1,191 @@
 Chapter 8 Query Language (p.235 of 538)
+JP QL provides a way to express queries in terms of entities and their relationships, not tables.
+
+In query expressions, entities are referred to by name. If an entity has not been explicitly named
+(using the name attribute of the @Entity annotation, for example), the unqualified class name is used by
+default.
+
+Simple persistent properties with no relationship mapping comprise the persistent state of the entity and are
+referred to as state fields. 
+
+Persistent properties that are also relationships are called association fields.
+
+Queries are not case-sensitive except in two cases: ENTITY NAMES AND PROPERTIES MUST BE SPECIFIED EXACTLY AS THEY ARE NAMED.
+
+-----------------------------------------------------------------------------------------------------------------------------
+SELECT Clause (240)
+
+Path Expression - are used for navigation out of entity - to the fields or other related entity.
+Example: select e.department.name from Employee e
+
+Navigation expressions can be chained together to traverse complex entity graphs as long as the path
+moves from left to right across single-valued associations. A path cannot continue from a state field or
+collection-valued association.
+
+Note that path expressions can navigate into and across embedded objects as well as normal entities. The only
+restriction on embedded objects in a path expression is that the root of the path expression must begin
+with an entity.
+
+
+ The keyword OBJECT can be used to indicate that the result type of the query is the entity bound to
+the identification variable. It has no impact on the query, but it can be used as a visual clue:
+
+SELECT OBJECT(d) FROM Department d
+
+The only problem with this syntax is that OBJECT keyword is limited to identification variables. THe expression OBJECT(e.department) is illegal
+even thouth Department is an entity type. Therefore, OBJECT syntax is not recommended.
+
+SELECT DISTINCT e.department <-- ensures the resultset contains no duplicates.
+
+
+THe result type of the select query CANNOT be a collection. THE FOLLOWING SYNTAX IS ILLEGAL:
+SELECT d.employees from Department d
+
+
+You can selece embeddables using the JP QL but remember that they will not be managed.
+If you select entities and then from them select embeddables - only then they ARE managed.
+
+--------------------------------------------------------------------------------------------------------------------------------
+Combining Expressions (p. 242)
+SELECT e.name, e.salary
+FROM Employee e
+
+Returns zero or more arrays of Object types: the first element of each array is a String reprsenting name, the second is Double representing salary.
+
+The practice of returning only the subset of entity's fields is called "Projection".
+Might be very useful for web apps when you need to display only a small set of fields from the large dataset.
+--------------------------------------------------------------------------------------------------------------------------------
+Constructor expressions:
+
+SELECT NEW com.example.EmployeeDetails(e.name, e.salary, e.department.name)
+FROM Employee e
+
+The result type of this query is the example.EmployeeDetails Java class. As the query processor
+iterates over the results of the query, it instantiates new instances of EmployeeDetails using the
+constructor that matches the expression types listed in the query.
+
+The result object type must be referred to by using the fully qualified name of the object. The class
+does not have to be mapped to the database in any way, however.
+
+Constructor expressions are powerful tools for constructing coarse-grained data transfer objects or
+view objects for use in other application tiers. Instead of manually constructing these objects, a single
+query can be used to gather together view objects ready for presentation on a web page.
+--------------------------------------------------------------------------------------------------------------------------------
+Inheritance and Polymorphism:
+
+The query language supports polymorphic results
+where multiple subclasses of an entity can be returned by the same query.
+
+If you want to restrict the polymorphic query by the subclass, the TYPE expression:
+
+SELECT p
+FROM Project p
+WHERE TYPE(p) = DesignProject OR TYPE(p) = QualityProject
+
+Note that there are no quotes around the DesignProject and QualityProject identifiers. Those are treated as entity names, not string in JPQL.
+
+--------------------------------------------------------------------------------------------------------------------------------
+FROM Clause:
+
+consists of: identification variables, optional joined relationships .
+
+
+JOINS:
+  Joins occur when:
+	1. Two or more two or more range variable declarations are listed in the FROM clause and appear in the select clause.
+	2. The JOIN operator is used.
+	3. A path expression navigates across an association field to another entity.
+	4. One or more where conditions compare attribbutes of different identification variables.
+
+Inner joins return the objects from both entity types that satisfy all the join conditions.
+Outer joins return the objects from both entity types that satisfy all the join conditions 
+	+ the set of objects from one entity type (left entity) that have no matching join conditions in the other.
+
+In the absence of join conditions between two entities, queries will produce a Cartesian product.
+	entity1 * entity2 (the number of results is squared)
+
+--------------------------------------------------------------------------------------------------------------------------------
+Inner Joins:
+
+SELECT p from Employee e JOIN e.phones p  <-- Returns the Phone entities.
+
+In the definition of path expressions earlier, it was noted that a path couldn’t continue from a state
+field or collection association field. To work around this situation, the collection association field must
+be joined in the FROM clause so that a new identification variable is created for the path, allowing it to
+be the root for new path expressions
+
+Join OPerator and Single-Valued Association Fields:
+
+SELECT d FROM Employee e JOIN e.department d
+
+
+THe above query is semantically equivalent to:
+
+SELECT e.department FROM Employee e
+--------------------------------------------------------------------------------------------------------------------------------
+Join Conditions in the WHERE clause.
+
+SELECT d, m
+FROM Department d, Employee m
+WHERE d = m.department
+
+--------------------------------------------------------------------------------------------------------------------------------
+Multiple Joins:
+
+SELECT DISTINCT p
+FROM Department d JOIN d.employees e JOIN e.projects p
+
+---------------------------------------------------------------------------------------------------------------------------------
+Map Joins:
+Collection-valued associatoin implemented as Map is a special case. Identification variables in JP QL refer to maps value by default.
+
+For example, consider the case where the phones relationship of the
+Employee entity is modeled as a map, where the key is the number type (work, cell, home, etc.) and the
+value is the phone number. The following query enumerates the phone numbers for all employees:
+SELECT e.name, p
+FROM Employee e JOIN e.phones p
+
+This behavior can be highlighted explicitly through the use of the VALUE keyword. For example, the
+preceding query is functionally identical to the following:
+SELECT e.name, VALUE(p)
+FROM Employee e JOIN e.phones p
+
+To access the key instead of the value for a given map item, we can use the KEY keyword to override
+the default behavior and return the key value for a given map item.
+
+SELECT e.name, KEY(p), VALUE(p)
+FROM Employee e JOIN e.phones p
+WHERE KEY(p) IN ('Work', 'Cell')
+
+Finally, in the event that we want both the key and the value returned together in the form of a
+java.util.Map.Entry object, we can specify the ENTRY keyword in the same fashion. Note that the
+ENTRY keyword can only be used in the SELECT clause. The KEY and VALUE keywords can also be used
+as part of conditional expressions in the WHERE and HAVING clauses of the query.
+
+---------------------------------------------------------------------------------------------------------------------------------
+Outer Joins:
+
+An outer join between two entities produces a domain in which only one side of the relationship is
+required to be complete.
+In other words, the outer join of Employee to Department across the employee
+department relationship returns all employees and the department to which the employee has been
+assigned, but the department is returned only if it is available
+
+SELECT e, d
+FROM Employee e LEFT JOIN e.department d
+
+if the employee has not been assigned to department, the department (the 2nd element of the resulting objects array) will be null
+
+---------------------------------------------------------------------------------------------------------------------------------
+Fetch Joins (p. 250)
+
+
+
+
+
+
+  
+
+
+
+

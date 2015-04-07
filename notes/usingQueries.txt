@@ -248,6 +248,122 @@ WHERE e.department IN (SELECT DISTINCT d
 FROM Department d JOIN d.employees de JOIN de.projects p WHERE p.name LIKE 'QA%')
 ---------------------------------------------------------------------------------------------------------------------------------
 Collection Expressions (p. 255)
+---------------------------------------------------------------------------------------------------------------------------------
+Function Expressions:
+ABS(number) The ABS function returns the unsigned version of the number
+argument. The result type is the same as the argument type
+(integer, float, or double).
+CONCAT(string1, string2) The CONCAT function returns a new string that is the
+concatenation of its arguments, string1 and string2.
+CURRENT_DATE The CURRENT_DATE function returns the current date as
+defined by the database server.
+CURRENT_TIME The CURRENT_TIME function returns the current time as
+defined by the database server.
+CURRENT_TIMESTAMP The CURRENT_TIMESTAMP function returns the current
+timestamp as defined by the database server.
+INDEX(identification variable) The INDEX function returns the position of an entity within an
+ordered list.
+LENGTH(string) The LENGTH function returns the number of characters in the
+string argument.
+LOCATE(string1, string2 [, start]) The LOCATE function returns the position of string1 in string2,
+optionally starting at the position indicated by start. The result
+is zero if the string cannot be found.
+LOWER(string) The LOWER function returns the lowercase form of the string
+argument.
+MOD(number1, number2) The MOD function returns the modulus of numeric arguments
+number1 and number2 as an integer.
+SIZE(collection) The SIZE function returns the number of elements in the
+collection, or zero if the collection is empty.
+SQRT(number) The SQRT function returns the square root of the number
+argument as a double.
+SUBSTRING(string, start, end) The SUBSTRING function returns a portion of the input string,
+starting at the index indicated by start up to length characters.
+String indexes are measured starting from one.
+UPPER(string) The UPPER function returns the uppercase form of the string
+argument.
+TRIM([[LEADING|TRAILING|BOTH]
+[char] FROM] string)
+The TRIM function removes leading and/or trailing characters
+from a string. If the optional LEADING, TRAILING, or BOTH
+keyword is not used, both leading and trailing characters
+---------------------------------------------------------------------------------------------------------------------------------
+CASE:
+CASE {WHEN <cond_expr> THEN <scalar_expr>}+ ELSE <scalar_expr> END
+---------------------------------------------------------------------------------------------------------------------------------
+The third form of the case expression is the coalesce expression. This form of the case expression
+accepts a sequence of one or more scalar expressions. It has the following form:
+COALESCE(<scalar_expr> {,<scalar_expr>}+)
+The scalar expressions in the COALESCE expression are resolved in order. The first one to return a
+non-null value becomes the result of the expression. The following example demonstrates this usage,
+returning either the descriptive name of each department or the department identifier if no name has
+been defined:
+SELECT COALESCE(d.name, d.id)
+FROM Department d
+The fourth and final form of the case expression is somewhat unusual. It accepts two scalar
+expressions and resolves both of them. If the results of the two expressions are equal, the result of the
+expression is null. Otherwise it returns the result of the first scalar expression. This form of the case
+expression is identified by the NULLIF keyword:
+NULLIF(<scalar_expr1>, <scalar_expr2>)
+One useful trick with NULLIF is to exclude results from an aggregate function. For example, the
+following query returns a count of all departments and a count of all departments not named ‘QA’:
+SELECT COUNT(*), COUNT(NULLIF(d.name, 'QA'))
+FROM Department d
+---------------------------------------------------------------------------------------------------------------------------------
+Aggregate Functions:
+
+AVG
+SUM
+MIN
+MAX
+COUNT
+---------------------------------------------------------------------------------------------------------------------------------
+Group By:
+
+Multiple grouping expressions can also be used to further break down the results:
+SELECT d.name, e.salary, COUNT(p)
+FROM Department d JOIN d.employees e JOIN e.projects p
+GROUP BY d.name, e.salary
+
+Because there are two grouping expressions, the department name and employee salary must be
+listed in both the SELECT clause and GROUP BY clause. For each department, this query counts the
+number of projects assigned to employees based on their salary.
+In the absence of a GROUP BY clause, the entire query is treated as one group, and the SELECT list
+can contain only aggregate functions. For example, the following query returns the number of
+employees and their average salary across the entire company:
+SELECT COUNT(e), AVG(e.salary)
+FROM Employee e
+
+---------------------------------------------------------------------------------------------------------------------------------
+HAVING Clause:
+defines a filter to be applied after the query results have been grouped.
+
+It is
+effectively a secondary WHERE clause, and its definition is the same: the keyword HAVING followed by a
+conditional expression. The key difference with the HAVING clause is that its conditional expressions are
+limited to state fields or single-valued association fields previously identified in the GROUP BY clause.
+Conditional expressions in the HAVING clause can also make use of aggregate functions. In many
+respects, the primary use of the HAVING clause is to restrict the results based on the aggregate result
+values.
+
+SELECT e, COUNT(p)
+FROM Employee e JOIN e.projects p
+GROUP BY e
+HAVING COUNT(p) >= 2
+---------------------------------------------------------------------------------------------------------------------------------
+
+DELETE QUeries:
+
+Delete queries are polymorphic. Any entity subclass instances that meet the criteria of the delete
+query will also be deleted. Delete queries do not honor cascade rules, however. No entities other than
+the type referenced in the query and its subclasses will be removed, even if the entity has relationships to
+other entities with cascade removes enabled.
+
+DELETE FROM Employee e
+WHERE e.department IS NULL
+---------------------------------------------------------------------------------------------------------------------------------
+
+
+
 
 
 

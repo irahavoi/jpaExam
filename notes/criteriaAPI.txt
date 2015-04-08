@@ -1,1 +1,9 @@
 Criteria API (p. 267 of 538)
+
+CriteriaBuilder cb = em.getCriteriaBuilder();
+CriteriaQuery<Employee> c = cb.createQuery(Employee.class);
+Root<Employee> emp = c.from(Employee.class);
+c.select(emp)
+.where(cb.equal(emp.get("name"), "John Smith"));
+
+p. 269

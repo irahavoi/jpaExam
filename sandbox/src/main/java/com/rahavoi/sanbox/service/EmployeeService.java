@@ -4,8 +4,14 @@ import java.util.List;
 
 import javax.persistence.EntityManager;
 import javax.persistence.TypedQuery;
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.Join;
+import javax.persistence.criteria.JoinType;
+import javax.persistence.criteria.Root;
 
 import com.rahavoi.entity.Employee;
+import com.rahavoi.entity.Project;
 
 public class EmployeeService {
 	private EntityManager em;
@@ -48,5 +54,18 @@ public class EmployeeService {
 	public List<Employee> findAllEmployees(){
 		TypedQuery<Employee> query = em.createQuery("SELECT e FROM Employee e", Employee.class);
 		return query.getResultList();
+	}
+	
+	public List<Employee> findEmployees(String name, String deptName, 
+			String projectName, String city){
+		CriteriaBuilder cb = em.getCriteriaBuilder();
+		CriteriaQuery<Employee> c = cb.createQuery(Employee.class);
+		Root<Employee> emp = c.from(Employee.class);
+		
+		c.select(emp);
+		c.distinct(true);
+		
+		Join<Employee, Project> project = emp.join("projects", JoinType.LEFT);
+		
 	}
 }

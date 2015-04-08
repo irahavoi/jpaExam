@@ -32,8 +32,11 @@ public class App
         EntityManager em = emf.createEntityManager();
         
         EmployeeService eService = new EmployeeService(em);
+       
+        List<Employee> result = eService.findEmployees("Joet", null, null, null);
+        //List<Employee> allEmployees = eService.findAllEmployees();
         
-       Employee employee = new Employee();
+      /* Employee employee = new Employee();
        employee.setName("Joe");
        employee.setSalary(90000);
        
@@ -55,7 +58,7 @@ public class App
        em.persist(employee);
        em.persist(department);
        em.persist(parking);
-       
+       */
        
        em.getTransaction().commit();
        

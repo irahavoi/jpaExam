@@ -34,3 +34,14 @@ HAVING --> AbstractQuery --> having()
 		
 ---------------------------------------------------------------------------------
 Criteria Objects and Mutability (p. 274)
+The majority of objects created through the criteria API are in fact immutable.
+
+Only the CriteriaBuilder methods that create query definition objects produce truly mutable
+results. The CriteriaQuery and Subquery objects are intended to be modified many times by invoking
+methods such as select(), from(), and where(). But even here care must be taken as invoking methods
+twice can have one of two different effects. In most cases, invoking a method twice replaces the contents
+within the object with the argument being supplied. For example, invoking select() twice with two
+different arguments results in only the argument from the second invocation actually remaining as part
+of the query definition.
+In some cases, however, invoking a method twice is in fact addition. Invoking from() twice with
+different arguments results in multiple query roots being added to the query definition.

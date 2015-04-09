@@ -7,3 +7,30 @@ c.select(emp)
 .where(cb.equal(emp.get("name"), "John Smith"));
 
 p. 269
+----------------------------------------------------------------------------------
+Building Criteria API queries (272).
+Creating a Query Definition:
+
+EntityManager.getCriteriaBuilder()
+
+3 methods for creating a query definition:
+
+	CriteriaBuilder
+		.createQuery(Class<T>)  <--The result is typed
+		.createQuery()  <-- The result is object
+		.createTupleQuery() <-- Returns Tuple, an object containing an assortment of objects and applies typing to 
+					aggregate parts. It can be used whenever multiple items are returned and you want to combine 
+					them into a single typed object.
+
+JP QL Clause --> Criteria API --> Interface Method
+
+SELECT -->  CriteriaQuery -->  select()
+	    Subquery --> select()
+FROM --> AbstractQuery --> from()
+WHERE --> AbstractQuery --> where()
+ORDER BY --> CriteriaQuery  --> orderBy()
+GROUP BY --> AbstractQuery --> groupBy()
+HAVING --> AbstractQuery --> having()
+		
+---------------------------------------------------------------------------------
+Criteria Objects and Mutability (p. 274)

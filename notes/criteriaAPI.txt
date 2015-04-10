@@ -45,3 +45,5 @@ different arguments results in only the argument from the second invocation actu
 of the query definition.
 In some cases, however, invoking a method twice is in fact addition. Invoking from() twice with
 different arguments results in multiple query roots being added to the query definition.
+----------------------------------------------------------------------------------
+Query Roots and Path Expressions (275)

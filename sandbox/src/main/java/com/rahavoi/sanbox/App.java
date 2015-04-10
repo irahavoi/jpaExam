@@ -34,17 +34,22 @@ public class App
     	EntityManagerFactory emf = Persistence.createEntityManagerFactory("EmployeeFactory");
         EntityManager em = emf.createEntityManager();
         
-        CriteriaBuilder cb = em.getCriteriaBuilder();
+        
+        
+        /*CriteriaBuilder cb = em.getCriteriaBuilder();
         CriteriaQuery<Employee> c = cb.createQuery(Employee.class);
         Root<Employee> emp = c.from(Employee.class);
         
         c.select(emp).where(cb.equal(emp.get("department").get("name"), "IT"));
         
+        c.distinct(true);
+        
         TypedQuery<Employee> q = em.createQuery(c);
         
-        q.getResultList();
+        q.getResultList();*/
         
-        //EmployeeService eService = new EmployeeService(em);
+        EmployeeService eService = new EmployeeService(em);
+        eService.tupleTest();
        
         //List<Employee> result = eService.findEmployees("Joet", null, null, null);
         //List<Employee> allEmployees = eService.findAllEmployees();

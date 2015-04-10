@@ -105,3 +105,83 @@ objects locally and refer to them when necessary.
 
 -----------------------------------------------------------------------------------------------------------
 The SELECT CLAUSE (p. 277)
+
+Selecting Single Expressions:
+
+criteraQuery.select()
+
+Some vendors may allow the call to select() to be omitted in the case where there is a single query
+root and it matches the declared result type for the query. This is non-portable behavior.
+
+criteriaQuery.distinct(true); <-- removes dubplicates
+
+
+The type of the expression provided to the select() method must be compatible with the result type used to
+create the CriteriaQuery object.
+
+For example, if the CriteriaQuery object was created by invoking
+createQuery(Project.class) on the CriteriaBuilder interface, then it will be an error to attempt to set
+an expression resolving to the Employee entity using the select() method.
+
+------------------------------------------------------------------------------------------------------------
+Selecting Multiple Expressions.
+
+When defining a SELECT clause that involves more than one expression, the criteria API approach
+required depends on how the query definition was created.
+
+If the result type is Tuple, then a
+CompoundSelection<Tuple> object must be passed to select().
+
+If the result type is a non-persistent class
+that will be created using a constructor expression, then the argument must be a
+CompoundSelection<[T]> object, where [T] is the class type of the non-persistent class.
+
+Finally, if the result type is an array of objects, then a CompoundSelection<Object[]> object must be provided. These
+objects are created with the tuple(), construct() and array() methods of the CriteriaBuilder interface,
+respectively.
+
+CriteriaQuery<Tuple> c= cb.createTupleQuery();
+Root<Employee> emp = c.from(Employee.class);
+c.select(cb.tuple(emp.get("id"), emp.get("name")));
+
+.multiselect() <-- method of the CriteriaQuery interface. may be used to set
+the SELECT clause. The multiselect() method will create the appropriate argument type given the
+result type of the query.
+
+------------------------------------------------------------------------------------------------------------
+Using ALiases:
+Like JP QL, aliases may be set on expressions in the SELECT clause, which will then be included in the resulting
+sql.
+
+Aliases are useful when the query has a result type of Tuple. 
+
+CriteriaQuery<Tuple> c= cb.createTupleQuery();
+Root<Employee> emp = c.from(Employee.class);
+c.multiselect(emp.get("id").alias("id"), emp.get("name").alias("fullName"));
+
+Invoking alias() changes the original Selection object and returns it from
+the method invocation. It is invalid to set the alias of a Selection object more than once.
+
+Making use of the alias when iterating over the query results is as simple as requesting the
+expression by name:
+
+TypedQuery<Tuple> q = em.createQuery(c);
+for (Tuple t : q.getResultList()) {
+  String id = t.get("id", String.class);
+  String fullName = t.get("fullName", String.class);
+  // ...
+}
+--------------------------------------------------------------------------------------------------------------
+FROM Clause. (expressing joins using Criteria API)
+
+Inner and outer Joins. - p.280
+
+
+
+
+
+
+
+
+
+

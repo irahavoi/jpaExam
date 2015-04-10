@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import javax.persistence.EntityManager;
+import javax.persistence.Tuple;
 import javax.persistence.TypedQuery;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
@@ -109,5 +110,20 @@ public class EmployeeService {
 		}
 		return q.getResultList();
 
+	}
+	
+	public void tupleTest(){
+		CriteriaBuilder cb = em.getCriteriaBuilder();
+		CriteriaQuery<Tuple> c = cb.createTupleQuery();
+		Root<Employee> emp = c.from(Employee.class);
+		
+		c.select(cb.tuple(emp.get("id"), emp.get("name")));
+		
+		
+		em.createQuery(c).getResultList();
+		
+		
+		
+		
 	}
 }

@@ -7,6 +7,9 @@ import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.Persistence;
 import javax.persistence.TypedQuery;
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.Root;
 
 import com.rahavoi.entity.Department;
 import com.rahavoi.entity.Employee;
@@ -31,9 +34,19 @@ public class App
     	EntityManagerFactory emf = Persistence.createEntityManagerFactory("EmployeeFactory");
         EntityManager em = emf.createEntityManager();
         
-        EmployeeService eService = new EmployeeService(em);
+        CriteriaBuilder cb = em.getCriteriaBuilder();
+        CriteriaQuery<Employee> c = cb.createQuery(Employee.class);
+        Root<Employee> emp = c.from(Employee.class);
+        
+        c.select(emp).where(cb.equal(emp.get("department").get("name"), "IT"));
+        
+        TypedQuery<Employee> q = em.createQuery(c);
+        
+        q.getResultList();
+        
+        //EmployeeService eService = new EmployeeService(em);
        
-        List<Employee> result = eService.findEmployees("Joet", null, null, null);
+        //List<Employee> result = eService.findEmployees("Joet", null, null, null);
         //List<Employee> allEmployees = eService.findAllEmployees();
         
       /* Employee employee = new Employee();

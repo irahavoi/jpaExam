@@ -47,3 +47,61 @@ In some cases, however, invoking a method twice is in fact addition. Invoking fr
 different arguments results in multiple query roots being added to the query definition.
 ----------------------------------------------------------------------------------
 Query Roots and Path Expressions (275)
+
+The AbstractQuery interface (parent of CriteriaQuery) provides the from() method to define the
+abstract schema type that will form the basis for the query. This method accepts an entity type as a
+parameter and adds a new root to the query.
+
+CriteriaQuery<Employee> c = criteriaBuilder.createQuery(Employee.class);
+Root<Employee> emp = c.from(Employee.class);
+
+The Root interface
+is itself extended from the From interface, which exposes functionality for joins. The From interface
+extends Path, which further extends Expression and then Selection, allowing the root to be used in other
+parts of the query definition.
+
+Calls to the from() method are additive. Each call adds another root to the query, resulting in a Cartesian
+product when more than one root is defined if no further constraints are applied in the WHERE clause.
+
+Example with multiple roots:
+SELECT DISTINCT d FROM Department d, Employee e WHERE d = e.department
+
+Using criteria API, this query is constructed by calling from() twice:
+
+CriteriaQuery<Department> c = cb.createQuery(Department.class);
+
+Root<Department> dept = c.from(Department.class);
+Root<Employee> emp = c.from(Employee.class);
+
+c.select(dept)
+  .distinct(true)
+  .where(cb.equal(dept, emp.get("department")));
+
+
+
+PATH Expressions:
+
+Consider the following basic JP QL query, which returns all the employees living in New York City:
+SELECT e
+FROM Employee e <-- Query root
+WHERE e.address.city = 'New York' <--Path expression
+
+To represent this path expression using the criteria API, we would use the following expression:
+emp.get("address").get("city");
+
+.get() method here is equivalent to the dot operator used in JP QL. It returns a Path object - which
+allows this method to be chained together.
+
+CriteriaQuery<Employee> c = cb.createQuery(Employee.class);
+Root<Employee> emp = c.from(Employee.class);
+c.select(emp)
+  .where(cb.equal(emp.get("address").get("city"), "New York"));
+
+Once again it is worth emphasizing that the from() method of
+AbstractQuery should never be invoked more than once for each desired root. Invoking it multiple times
+will result in additional roots being created and a Cartesian product if not careful. Always store the root
+objects locally and refer to them when necessary.
+
+
+-----------------------------------------------------------------------------------------------------------
+The SELECT CLAUSE (p. 277)

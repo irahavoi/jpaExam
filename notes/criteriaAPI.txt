@@ -175,6 +175,24 @@ for (Tuple t : q.getResultList()) {
 FROM Clause. (expressing joins using Criteria API)
 
 Inner and outer Joins. - p.280
+Join expressions are created using the join() method of the From interface, which is extended both by
+Root, which we covered earlier, and Join, which is the object type returned by creating join expressions.
+This means that any query root may join, and that joins may chain with one another. The join() method
+requires a path expression argument and optionally an argument to specify the type of join,
+JoinType.INNER or JoinType.LEFT, for inner and outer joins respectively.
+
+
+Join<Employee,Project> project = emp.join("projects", JoinType.LEFT);
+
+Had the JoinType.LEFT argument been omitted, the join type would have defaulted to be an inner join.
+
+Joins may also be cascaded in a single statement. The resulting join will be typed by the source and
+target of the last join in the statement:
+Join<Employee,Project> project = dept.join("employees").join("projects");
+
+
+
+
 
 
 

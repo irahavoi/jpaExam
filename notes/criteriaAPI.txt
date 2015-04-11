@@ -190,6 +190,212 @@ Joins may also be cascaded in a single statement. The resulting join will be typ
 target of the last join in the statement:
 Join<Employee,Project> project = dept.join("employees").join("projects");
 
+Joins across collection relationships that use Map are a special case. JP QL uses the KEY and VALUE
+keywords to extract the key or value of a Map element for use in other parts of the query. In the criteria
+API, these operators are handled by the key() and value() methods of the MapJoin interface.
+
+Root<Employee> emp = c.from(Employee.class);
+MapJoin<Employee,String,Phone> phone = emp.joinMap("phones");
+
+joinCollection()
+joinSet()
+joinList()
+
+
+One can also use strongly-typed version of join().
+
+As with JP QL, the criteria API supports the fetch join, a query construct that allows data to be prefetched
+into the persistence context as a side effect of a query that returns a different, but related, entity.
+
+The criteria API builds fetch joins through the use of the fetch() method on the FetchParent interface. It is
+used instead of join() in cases where fetch semantics are required and accepts the same argument
+types.
+
+CriteriaQuery<Employee> c = cb.createQuery(Employee.class);
+Root<Employee> emp = c.from(Employee.class);
+emp.fetch("address");   <-- The return type is Fetch.  Fetch cannot be used anywhere else in the query.
+c.select(emp);
+
+Use JoinType.LEFT if you do not want to skip employees that have no address:
+emp.fetch("address", JoinType.LEFT);
+---------------------------------------------------------------------------------------------------------------
+The WHERE clause (282):
+
+AbstractQuery.where()
+
+Each call to where() will render any previously set WHERE expressions 
+to be discarded and replaced with the newly passed-in ones.
+
+JP QL to CriteriaBuilder Predicate Mapping:
+----------------------------------------------
+JP QL Operator 		CriteriaBuilder Method
+----------------------------------------------
+AND 			and()
+OR 			or()
+NOT			not()
+= 			equal()
+<> 			notEqual()
+> 			greaterThan(), gt()
+>= 			greaterThanOrEqualTo(), ge()
+< 			lessThan(), lt()
+<= 			lessThanOrEqualTo(), le()
+BETWEEN 		between()
+IS NULL 		isNull()
+IS NOT NULL 		isNotNull()
+EXISTS 			exists()
+NOT EXISTS 		not(exists())
+IS EMPTY 		isEmpty()
+IS NOT EMPTY 		isNotEmpty()
+MEMBER OF 		isMember()
+NOT MEMBER OF 		isNotMember()
+LIKE 			like()
+NOT LIKE 		notLike()
+IN 			in()
+NOT IN 			not(in())
+-------------------------------------------------
+
+JP QL to CriteriaBuilder Scalar Expression Mapping:
+-------------------------------------------------
+JP QL Expression 	CriteriaBuilder Method
+-------------------------------------------------
+ALL 			all()
+ANY 			any()
+SOME 			some()
+- 			neg(), diff()
++ 			sum()
+* 			prod()
+/ 			quot()
+COALESCE 		coalesce()
+NULLIF 			nullif()
+CASE 			selectCase()
+------------------------------------------------
+
+JP QL to CriteriaBuilder Function Mapping
+------------------------------------------------
+JP QL Function 		CriteriaBuilder Method
+------------------------------------------------
+ABS 			abs()
+CONCAT 			concat()
+CURRENT_DATE 		currentDate()
+CURRENT_TIME 		currentTime()
+CURRENT_TIMESTAMP 	currentTimestamp()
+LENGTH 			length()
+LOCATE 			locate()
+LOWER 			lower()
+MOD 			mod()
+SIZE 			size()
+SQRT 			sqrt()
+SUBSTRING 		substring()
+UPPER 			upper()
+TRIM 			trim()
+-------------------------------------------------
+
+JP QL to CriteriaBuilder Aggregate Function Mapping
+---------------------------------------------------
+JP QL Aggregate Function 	CriteriaBuilder Method
+---------------------------------------------------
+AVG 			avg()
+SUM 			sum(), sumAsLong(), sumAsDouble()
+MIN 			min(), least()
+MAX 			max(), greatest()
+COUNT 			count()
+COUNT DISTINCT 		countDistinct()
+---------------------------------------------------
+
+
+
+
+Predicates (285):
+
+there are two sets of methods available for relative comparisons. For example, there is greaterThan() and gt(). The twoletter
+forms are specific to numeric values and are strongly typed to work with number types. The long forms must be used for all other cases.
+
+
+Parameters:
+CriteriaQuery<Employee> c = cb.createQuery(Employee.class);
+Root<Employee> emp = c.from(Employee.class);
+c.select(emp);
+ParameterExpression<String> deptName =
+cb.parameter(String.class, "deptName");
+c.where(cb.equal(emp.get("dept").get("name"), deptName));
+
+
+
+Subqueries:
+The AbstractQuery interface provides the subquery() method for creation of subqueries.
+
+The argument to subquery() is a class instance
+representing the result type of the subquery. The return value is an instance of Subquery, which is itself
+an extension of AbstractQuery.
+
+
+---------------------------------------------------------------------------------------------------
+
+IN Expressions (289):
+
+SELECT e
+FROM Employee e
+WHERE e.address.state IN ('NY', 'CA')
+
+converting the above JP QL using Criteria API:
+
+CriteriaQuery<Employee> c = cb.createQuery(Employee.class);
+Root<Employee> emp = c.from(Employee.class);
+c.select(emp).where(cb.in(emp.get("address").get("state")).value("NY").value("CA"));
+
+or using in():
+
+c.select(emp).where(emp.get("address").get("state").in("NY","CA"));
+
+-----------------------------------------------------------------------------------------------------
+CASE  Expressions: 
+Case expressions are required by JPA providers but may not be supported by all databases.
+The use of the case statement on the database not supporting them is undefined.
+
+SELECT p.name,
+  CASE WHEN TYPE(p) = DesignProject THEN 'Development'
+       WHEN TYPE(p) = QualityProject THEN 'QA'
+       ELSE 'Non-Development'
+  END
+  FROM Project p
+WHERE p.employees IS NOT EMPTY
+
+The selectCase() method of the CriteriaBuilder interface is used to create the CASE expression.
+
+CriteriaQuery<Object[]> c = cb.createQuery(Object[].class);
+Root<Project> project = c.from(Project.class);
+c.multiselect(project.get("name"),cb.selectCase()
+	.when(cb.equal(project.type(), DesignProject.class),"Development")
+	.when(cb.equal(project.type(), QualityProject.class),"QA")
+	.otherwise("Non-Development"))
+  .where(cb.isNotEmpty(project.<List<Employee>>get("employees")));
+
+The when() and otherwise() methods correspond to the WHEN and ELSE keywords from JP QL.
+Unfortunately, “else” is already a keyword in Java so “otherwise” must be used as a substitute.
+
+-------------------------------------------------------------------------------------------------------
+COALESCE (p.291):
+
+CriteriaQuery<Object> c = cb.createQuery();
+Root<Department> dept = c.from(Department.class);
+c.select(cb.coalesce()
+  .value(dept.get("name"))
+  .value(dept.get("id")));
+
+Or one can use convenience method and pass values right in coalesce method:
+
+c.select(cb.coalesce(dept.get("name"), dept.get("id")));
+
+-------------------------------------------------------------------------------------------------------
+Function Expressions (p 292):
+
+
+
+
+
+
+
+
 
 
 

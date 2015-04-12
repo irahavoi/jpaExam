@@ -1,0 +1,27 @@
+Advanced Object-Relational Mapping (301)
+----------------------------------------------------------
+Table and Column Names:
+
+@Table(name="employee")
+@Table(name="Employee")
+@Table(name="EMPLOYEE")
+
+Some database names are intended to be case-specific, and must be explicitly delimited.
+While it is by no means common, or good practice, a database in theory could have an EMPLOYEE table as well as an Employee table.
+
+The method of
+delimiting is the use of a second set of double quotes, which must be escaped, around the identifier. The
+escaping mechanism is the backslash (the “\” character), which would cause the following annotations
+to refer to different tables:
+@Table(name="\"Employee\"")
+@Table(name="\"EMPLOYEE\"")
+
+When in XML file:
+<column name="&quot;ID&quot;"/>
+<column name="&quot;Id&quot;"/>
+
+By including the empty delimited-identifiers element in the XML mapping file, all identifiers in
+the persistence unit will be treated as delimited, and quotes will be added to them when they are passed
+to the driver.
+-----------------------------------------------------------
+Complex Embedded Objects (303):

@@ -451,6 +451,9 @@ if there is no such entity in persistence context, IllegalArgument exception is 
 Strongly typed API overview (295):
 
 
+Canonical Metamodel)???
+
+
 
 
 

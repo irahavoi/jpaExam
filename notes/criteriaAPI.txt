@@ -388,6 +388,67 @@ c.select(cb.coalesce(dept.get("name"), dept.get("id")));
 
 -------------------------------------------------------------------------------------------------------
 Function Expressions (p 292):
+Function expressions are a feature unique to the
+criteria API that allows native SQL stored functions to be mixed with other criteria API expressions
+They are intended for cases where a limited amount of native SQL is required to satisfy some requirement but
+you don’t want to convert the entire query to SQL
+
+Functions are created using CriteriaBuilder.function()
+
+It requires as arguments the database function name, the expected return type and a variable list of
+arguments, if any, that should be passed to the function. The return type is an Expression, so it can be
+used in many other places within the query.
+
+--------------------------------------------------------------------------------------------------------
+
+ORDER BY Clause (292)
+
+CriteriaQuery.orderBy()
+
+accepts one or more Order objects, which are created by the asc() and desc() methods of the
+CriteriaBuilder interface:
+
+CriteriaQuery<Tuple> c = cb.createQuery(Tuple.class);
+Root<Employee> emp = c.from(Employee.class);
+
+Join<Employee,Department> dept = emp.join("dept");
+c.multiselect(dept.get("name"), emp.get("name"));
+
+c.orderBy(cb.desc(dept.get("name")),
+	  cb.asc(emp.get("name")));
+
+--------------------------------------------------------------------------------------------------------
+GROUP BY and HAVING Clauses
+
+
+CriteriaQuery<Object[]> c = cb.createQuery(Object[].class);
+Root<Employee> emp = c.from(Employee.class);
+Join<Employee,Project> project = emp.join("projects");
+
+c.multiselect(emp, cb.count(project))
+  .groupBy(emp)
+  .having(cb.ge(cb.count(project),2));				
+
+---------------------------------------------------------------------------------------------------------
+
+Strongly Typed query definitions (293)
+
+Metamodel:
+  EntityManager.getMetamodel()
+
+To get information about the entity:
+
+Metamodel mm = em.getMetamodel();
+EntityType<EMployee> emp_ = mm.entity(Employee.class);
+
+Equivalent methods for embeddables and manged types:
+	.embeddable()
+	.managedType()
+
+if there is no such entity in persistence context, IllegalArgument exception is thrown.
+
+----------------------------------------------------------------------------------------------------------
+Strongly typed API overview (295):
 
 
 

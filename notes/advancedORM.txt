@@ -25,3 +25,156 @@ the persistence unit will be treated as delimited, and quotes will be added to t
 to the driver.
 -----------------------------------------------------------
 Complex Embedded Objects (303):
+Embedded objects may have embedded objects and relations themselves:
+
+@Embeddable @Access(AccessType.FIELD)
+public class ContactInfo {
+  @Embedded
+  private Address residence;
+  @ManyToOne
+  @JoinColumn(name="PRI_NUM")
+  private Phone primaryPhone;
+  @ManyToMany 
+  @MapKey(name="type")
+  @JoinTable(name="EMP_PHONES")
+  private Map<String, Phone> phones;
+  // ...
+}
+
+@Entity
+public class Phone {
+  @Id String num;
+  @ManyToMany(mappedBy="contactInfo.phones")
+  List<Employee> employees;
+  String type;
+  // ...
+}
+
+if an embedded object is a part of an element collection
+then the embedded object in the collection can only include mappings where the foreign key is stored in
+the source table. It can contain owned relationships, such as one-to-one and many-to-one, but it cannot
+contain one-to-many or many-to-many relationships where the foreign key is in either the target table
+or a join table. Similarly, collection table-based mappings like element collections are unsupported.
+
+(p. 305)
+Overriding relationships within embeddables.
+@AssociationOverride provides ability to override relationship columns and join tables.
+
+@Entity
+public class Customer {
+  @Id int id;
+  @Embedded
+  @AttributeOverride(name="address.zip", column=@Column(name="ZIP"))
+  @AssociationOverrides({
+   @AssociationOverride(name="primaryPhone",
+     joinColumns=@JoinColumn(name="EMERG_PHONE")),
+   @AssociationOverride(name="phones",
+     joinTable=@JoinTable(name="CUST_PHONE"))})
+  private ContactInfo contactInfo;
+  // ...
+}
+---------------------------------------------------------------------------------------------------------
+Compound primary Keys (306)
+If the key consists of several attributes, you have to create a separate class for the key - primary key class.
+
+Primary key classes must include method definitions for equals() and hashCode() in order to be able
+to be stored and keyed on by the persistence provider, and their fields or properties must be in the set of
+valid identifier types. They also must be public, implement Serializable and have a no-arg constructor.
+
+There are 2 approaches for creating compound keys:
+  1. Id class. Each field of the entity that makes up the primary key is marked with @Id annotation.
+     The primary key class is defined separately and associated with the entity using @IdClass annotation:
+
+@Entity
+@IdClass(EmployeeId.class)
+public class Employee {
+  @Id private String country;
+  @Id
+  @Column(name="EMP_ID")
+  private int id;
+  private String name;
+  private Long Salary;
+}
+ 
+public class EmployeeId implements Serializable {
+  private String country;
+  private int id;
+  public EmployeeId() {}
+  public EmployeeId(String country, int id) {
+    this.country = country;
+    this.id = id;
+  }
+  public String getCountry() { return country; }
+  public int getId() { return id; }
+  public boolean equals(Object o) {
+    return ((o instanceof EmployeeId) &&
+    country.equals(((EmployeeId)o).getCountry()) &&
+    id == ((EmployeeId)o).getId());
+  } 
+  public int hashCode() {
+   return country.hashCode() + id;
+  }
+}  
+
+Note that there are no setter methods on the EmployeeId class. Once it has been constructed using
+the primary key values, it can’t be changed. We do this to enforce the notion that a primary key value
+cannot be changed, even when it is made up of multiple fields.
+
+The id class is useful as a structured object that encapsulates all of the primary key information. For
+example, when doing a query based upon the primary key:
+
+EmployeeId id = new EmployeeId(country, id);
+Employee emp = em.find(Employee.class, id);
+
+  2. Embedded Id class:
+ The embedded id class is just an embedded object that happens to be composed of the primary
+key components. We use an @EmbeddedId annotation to indicate that it is not just a regular embedded
+object but also a primary key class. When we use this approach, there are no @Id annotations on the
+class, nor is the @IdClass annotation used. You can think of @EmbeddedId as the logical equivalent to
+putting both @Id and @Embedded on the field.
+
+@Embeddable
+public class EmployeeId {
+  private String country;
+  @Column(name="EMP_ID")
+  private int id;
+  public EmployeeId() {}
+  public EmployeeId(String country, int id) { 
+    this.country = country;
+    this.id = id;
+  }
+  // ...
+}
+
+  
+Using the embedded primary key class is no different than using a regular embedded type, except
+that the annotation used on the attribute is @EmbeddedId instead of @Embedded.
+@Entity
+public class Employee {
+  @EmbeddedId private EmployeeId id;
+  private String name;
+  //...
+}
+
+----------------------------------------------------------------------------------------------------------------
+Derived Identifiers:
+When an identifier in one entity includes a foreign key to another entity, we call it a derived identifier.
+
+Because the entity containing the derived identifier depends upon another entity for its identity, we call
+the first the dependent entity. The entity that it depends upon is the target of a many-to-one or one-toone
+relationship from the dependent entity, and is called the parent entity.
+
+Example: Department has an ID as PK
+	 Project has it's own ID as PK and Department.ID as PK and FK.
+
+The dependent object cannot exist without a primary key, and since that primary key consists of the
+foreign key to the parent entity it should be clear that a new dependent entity cannot be persisted
+without the relationship to the parent entity being established.
+
+
+Basic Rules for Derived Identifiers (310):
+
+
+
+
+

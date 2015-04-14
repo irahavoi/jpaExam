@@ -167,14 +167,106 @@ relationship from the dependent entity, and is called the parent entity.
 Example: Department has an ID as PK
 	 Project has it's own ID as PK and Department.ID as PK and FK.
 
+
+
 The dependent object cannot exist without a primary key, and since that primary key consists of the
 foreign key to the parent entity it should be clear that a new dependent entity cannot be persisted
 without the relationship to the parent entity being established.
 
 
 Basic Rules for Derived Identifiers (310):
+A dependent entity might have multiple parent entities, i.e., a derived identifier
+might include multiple foreign keys.
+
+A dependent entity must have all its relationships to parent entities set before it
+can be persisted.
+
+If an entity class has multiple id attributes, then not only must it use an id class,
+but there must also be a corresponding attribute of the same name in the id class
+as each of the id attributes in the entity
+
+Id attributes in an entity might be of a simple type, or of an entity type that is the
+target of a many-to-one or one-to-one relationship
+
+If an id attribute in an entity is of a simple type, then the type of the matching
+attribute in the id class must be of the same simple type
+
+---------------------------------------------------------------------------------------------------------------
+Advanced mapping elements:
+Read-only mappings (316)
+JPA API allows to mark certain fields as read-only using "insertable" and "updatable" elements of the 
+@Column and @JoinColumn annotations. By default these elements are true.
+
+@Column(insertable=false, updatable=false)
+
+---------------------------------------------------------------------------------------------------------------
+Optionality:
+There are settings on some of the logical mappings that allow a basic
+mapping or a single-valued association mapping to be left empty or required to be specified in the
+object model. The element that requires or permits such behavior is the optional element in the @Basic,
+@ManyToOne, and @OneToOne annotations.
+
+When the optional element is specified as false, it indicates to the provider that the field or property
+mapping may not be null. The API does not actually define what the behavior is in the case when the
+value is null, but the provider may choose to throw an exception or simply do something else.
+
+The optional element may also be used by the
+provider when doing schema generation, because, if optional is set to true, then the column in the
+database must also be nullable.
+
+@ManyToOne(optional=false) <-- makes the related object Required.
+
+----------------------------------------------------------------------------------------------------------------
+Advanced Relationships (317)
+Mapping legacy databases can be tricky.
+Using Join tables:
+@JoinTable is used for overriding join table names.
+
+@Entity
+public class Employee {
+  @Id private int id;
+  private String name;
+  private long salary;
+  @ManyToOne
+  @JoinTable(name="EMP_DEPT")
+  private Department department;
+// ...
+}
+
+Avoiding Join Tables:
+it is possible to map unidirectional relations without a join table. 
+
+It requires the foreign key to be in the target table, or “many” side of the relationship, even though the target object
+does not have any reference to the “one” side.
+
+We call this a unidirectional one-to-many target foreign
+key mapping, because the foreign key is in the target table instead of a join table.
+
+To use this mapping, we first indicate that the one-to-many relationship is unidirectional by not
+specifying any mappedBy element in the annotation. Then we specify a @JoinColumn annotation on the
+one-to-many attribute to indicate the foreign key column. The catch is that the join column that we are
+specifying applies to the table of the target object, not the source object in which the annotation
+appears.
 
 
+@Entity
+public class Department {
+ @Id private int id;
+ @OneToMany
+ @JoinColumn(name="DEPT_ID")
+ private Collection<Employee> employees;
+// ...
+}
+
+Negative implications:
+From a performance standpoint, think of the case when both the state of an Employee is changed,
+and the Department that it belongs to is changed. When writing out the Employee state the foreign key to
+the Department is not known because the Employee entity does not have any reference to it. In this case,
+the Employee might have to be written out twice, once for the changed state of the Employee, and a
+second time when the Department entity changes are written out and the foreign key from Employee to
+Department must be updated to point to the Department that is referring to it.
+------------------------------------------------------------------------------------------------------------------------------------
+Compound Join Columns (320)
 
 
 

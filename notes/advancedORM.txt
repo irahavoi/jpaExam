@@ -424,8 +424,26 @@ private Address address;
 
 ------------------------------------------------------------------------------------------------------------------------------------
 Inheritance (328):
+Mapped Superclasses (329):
 
+A mapped superclass provides a convenient class on which to store shared state
+and behavior that entities can inherit from, but it is itself not a persistent class and cannot act in the
+capacity of an entity.
+It cannot be queried over and cannot be the target of a relationship. Annotations
+such as @Table are not permitted on mapped superclasses because the state defined in them applies only
+to its entity subclasses.
 
+Mapped superclasses can be compared to entities in somewhat the same way that an abstract class
+is compared to a concrete class; they can contain state and behavior but just can’t be instantiated as
+persistent entities.
+
+Mapped superclasses may or may not be defined as abstract in their class definitions, but it is good
+practice to make them actual abstract Java classes.
+
+@MappedSuperclass
+
+-----------------------------------------------------------------------------------------------------------------------------------
+Transient classes in the Hierarchy (331):
 
 
 

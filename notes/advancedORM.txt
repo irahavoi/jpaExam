@@ -304,5 +304,128 @@ private Collection<Project> projects;
 -----------------------------------------------------------------------------------------------------------------------------------------
 Orphan removal (322)
 
+orphanRemoval element is used when child records can not be re-assigned to another parents.
+  once removed from parent, such records are considered orphaned and are deleted by the provider.
+
+Only relationships with single cardinality on the source side can enable orphan removal, which is
+why the orphanRemoval option is defined on the @OneToOne and @OneToMany relationship annotations, but
+on neither of the @ManyToOne or @ManyToMany annotations.
+
+When specified, the orphanRemoval element causes child records to be deleted once their relationship with parent is broken.
+
+This can be done either by setting to null the
+attribute that holds the related entity, or additionally in the one-to-many case by removing the child
+entity from the collection. The provider is then responsible, at flush or commit time (whichever comes
+first), for removing the orphaned child entity.
+
+If the parent is removed, then by definition the child becomes an orphan and must also be removed.
+
+This second
+feature of orphan removal behavior is exactly equivalent to a feature that we covered in Chapter 6 called
+cascading, in which it is possible to cascade any subset of a defined set of operations across a
+relationship. Setting orphan removal on a relationship automatically causes the relationship to have the
+REMOVE operation option added to its cascade list, so it is not necessary to explicitly add it.
+
+It is impossible to turn off cascading REMOVE from a relationship marked for orphan
+removal since its very definition requires such behavior to be present.
+
+@Entity
+public class Employee {
+  @Id private int id;
+  @OneToMany(orphanRemoval=true)
+  private List<Evaluation> evals;
+  // ...
+}
+
+ Finally, if the orphaned object is not currently managed in the persistence context, either because it
+has been created in memory and not yet persisted, or is simply detached from the persistence context,
+orphan removal will not be applied.
+
+-----------------------------------------------------------------------------------------------------------------------------------------------
+Mapping Relationship State (323):
+For example, let’s say that we
+want to maintain the date an employee was assigned to work on a project. Storing the state on the
+employee is possible but less helpful, since the date is really coupled to the employee’s relationship to a
+particular project (a single entry in the many-to-many association). Taking an employee off a project
+should really just cause the assignment date to go away.
+
+In the database everything is rosy, because we can simply add a column to the join table. The data
+model provides natural support for relationship state.
+
+When we get to the object model, however, it becomes much more problematic. The issue is that
+Java has no inherent support for relationship state. Relationships are just object references or pointers,
+hence no state can ever exist on them.
+
+
+The Java solution is to turn the relationship into an entity that contains the desired state and map
+the new entity to what was previously the join table.
+
+The new entity will have a many-to-one relationship
+to each of the existing entity types, and each of the entity types will have a one-to-many relationship
+back to the new entity representing the relationship.
+
+----------------------------------------------------------------------------------------------------------------------------------------------
+Multiple Table (325):
+@SecondaryTable
+@SecondaryTables
+
+In an existing or legacy data model, it was actually quite common to
+spread data, even data that was tightly coupled, across multiple tables. This was done for different
+administrative as well as performance reasons, one of which was to decrease table contention when
+specific subsets of the data were accessed or modified.
+
+
+To account for this, entities may be mapped across multiple tables by making use of the
+@SecondaryTable annotation and its plural @SecondaryTables form.
+
+We call the default table or the table
+defined by the @Table annotation the primary table and any additional ones secondary tables.
+
+We can
+then distribute the data in an entity across rows in both the primary table and the secondary tables
+simply by defining the secondary tables as annotations on the entity and then specifying when we map
+each field or property which table the column is in. We do this by specifying the name of the table in the
+table element in @Column or @JoinColumn.
+
+Support for joining secondary tables to the primary table is limited to primary key join columns and is specified as a
+@PrimaryKeyJoinColumn annotation as part of the @SecondaryTable annotation.
+
+Example: there are 2 tables: EMP and EMP_ADDRESS but only one Employee entity:
+
+@Entity
+@Table(name="EMP")
+@SecondaryTable(name="EMP_ADDRESS",
+	pkJoinColumns=@PrimaryKeyJoinColumn(name="EMP_ID"))
+public class Employee {
+  @Id private int id;
+  private String name;
+  private long salary;
+  @Column(table="EMP_ADDRESS")
+  private String street;
+  @Column(table="EMP_ADDRESS")
+  private String city;
+  @Column(table="EMP_ADDRESS")
+  private String state;
+  @Column(name="ZIP_CODE", table="EMP_ADDRESS")
+  private String zip;
+  // ...
+}
+
+The same can be done using @Embedded:
+
+@Embedded
+@AttributeOverrides({
+	@AttributeOverride(name="street", column=@Column(table="EMP_ADDRESS")),
+	@AttributeOverride(name="city", column=@Column(table="EMP_ADDRESS")),
+	@AttributeOverride(name="state", column=@Column(table="EMP_ADDRESS")),
+	@AttributeOverride(name="zip", column=@Column(name="ZIP_CODE", table="EMP_ADDRESS"))
+})
+private Address address;
+
+------------------------------------------------------------------------------------------------------------------------------------
+Inheritance (328):
+
+
+
 
 

@@ -444,6 +444,84 @@ practice to make them actual abstract Java classes.
 
 -----------------------------------------------------------------------------------------------------------------------------------
 Transient classes in the Hierarchy (331):
+We call classes in an entity hierarchy that are not entities or mapped superclasses transient classes.
+
+----------------------------------------------------------------------------------------------------------------------------------
+Inheritance Models (332):
+@Inheritance - indicates strategy that should be used for mapping.
+
+There are three inheritance strategies:
+
+1. Single-table strategy - The most common and performant way of storing the state of multiple classes is to define a single table
+to contain a superset of all the possible state in any of the entity classes.
+
+The drawback is that for any concrete class there may be empty columns in the table as they apply only to the siblings of the class.
+
+The table must contain enough columns to store all the state in all the classes. An individual row
+stores the state of an entity instance of a concrete entity type, which would normally imply that there
+would be some columns left unfilled in every row. Of course, this leads to the conclusion that the
+columns mapped to concrete subclass state should be nullable, which is normally not a big issue but
+could be a problem for some database administrators.
+
+
+In general, the single-table approach tends to be more wasteful of database tablespace, but it does
+offer peak performance for both polymorphic queries and write operations.
+The SQL that is needed to
+issue these operations is simple, optimized, and does not require joining.
+
+To specify the single-table strategy for the inheritance hierarchy, the root entity class is annotated
+with the @Inheritance annotation with its strategy set to SINGLE_TABLE.
+
+@Entity
+@Inheritance(strategy=InheritanceType.SINGLE_TABLE)
+public abstract class Employee { ... }
+
+This strategy is the default one. SO, you do not have to include the stategy element at all.
+An empty @Inheritance annotation would do the trick just as well.
+
+
+2.Discriminator Column. (333
+mapped using the @DiscriminatorColumn annotation in conjunction with the @Inheritance annotation)
+
+The name element of this annotation specifies the name of the column that should be
+used as the discriminator column, and if not specified will be defaulted to a column named “DTYPE”.
+
+A discriminatorType element dictates the type of the discriminator column. Some applications
+prefer to use strings to discriminate between the entity types, while others like using integer values to
+indicate the class. The type of the discriminator column may be one of three predefined discriminator
+column types: INTEGER, STRING, or CHAR. If the discriminatorType element is not specified, then the
+default type of STRING will be assumed.
+
+3.Every row in the table will have a value in the discriminator column called a discriminator value, or a
+class indicator, to indicate the type of entity that is stored in that row.
+
+Every concrete entity in the
+inheritance hierarchy, therefore, needs a discriminator value specific to that entity type so that the
+provider can process or assign the correct entity type when it loads and stores the row. The way this is
+done is to use a @DiscriminatorValue annotation on each concrete entity class. The string value in the
+annotation specifies the discriminator value that instances of the class will get assigned.
+
+If no @DiscriminatorValue annotation is specified, then the provider will use a provider-specific way
+of obtaining the value. If the discriminatorType was STRING, then the provider will just use the entity
+name as the class indicator string. If the discriminatorType is INTEGER, then we would either have to
+specify the discriminator values for every entity class or none of them. If we were to specify some but not
+others, then we could not guarantee that a provider-generated value would not overlap with one that we
+specified.
+
+@Entity
+@Table(name="EMP")
+@Inheritance
+@DiscriminatorColumn(name="EMP_TYPE")
+public abstract class Employee { ... }
+@Entity
+public class ContractEmployee extends Employee { ... }
+@MappedSuperclass
+public abstract class CompanyEmployee extends Employee { ... }
+@Entity
+@DiscriminatorValue("FTEmp")
+public class FullTimeEmployee extends CompanyEmployee { ... }
+@Entity(name=“PTEmp”)
+public class PartTimeEmployee extends CompanyEmployee { ... }
 
 
 

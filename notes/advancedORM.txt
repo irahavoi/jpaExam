@@ -480,7 +480,7 @@ This strategy is the default one. SO, you do not have to include the stategy ele
 An empty @Inheritance annotation would do the trick just as well.
 
 
-2.Discriminator Column. (333
+Discriminator Column. (333
 mapped using the @DiscriminatorColumn annotation in conjunction with the @Inheritance annotation)
 
 The name element of this annotation specifies the name of the column that should be
@@ -492,7 +492,7 @@ indicate the class. The type of the discriminator column may be one of three pre
 column types: INTEGER, STRING, or CHAR. If the discriminatorType element is not specified, then the
 default type of STRING will be assumed.
 
-3.Every row in the table will have a value in the discriminator column called a discriminator value, or a
+Every row in the table will have a value in the discriminator column called a discriminator value, or a
 class indicator, to indicate the type of entity that is stored in that row.
 
 Every concrete entity in the
@@ -522,6 +522,112 @@ public abstract class CompanyEmployee extends Employee { ... }
 public class FullTimeEmployee extends CompanyEmployee { ... }
 @Entity(name=“PTEmp”)
 public class PartTimeEmployee extends CompanyEmployee { ... }
+
+
+p. 334
+----------------------------------------------------------------------------------------------------------------
+2. Joined strategy.
+ANother approach for inheritance is to use a separate table per each subclass. 
+Every entity, whether it is abstract or concrete, will have its state mapped to a different table.
+Mapping a table per entity provides the data reuse that a normalized1 data schema offers and is the
+most efficient way to store data that is shared by multiple subclasses in a hierarchy.
+
+The problem is that, when it comes time to reassemble an instance of any of the subclasses, the tables of the subclasses must
+be joined together with the superclass tables.
+
+The broader the hierarchy the more joins it will take to query across an entity superclass.
+
+To map an entity hierarchy to a joined model, the @Inheritance annotation need only specify JOINED
+as the strategy. Like the single-table example, the subclasses will adopt the same strategy that is specified
+in the root entity superclass.
+
+Even though there are multiple tables to model the hierarchy, the discriminator column is only
+defined on the root table, so the @DiscriminatorColumn annotation is placed on the same class as the
+@Inheritance annotation.
+
+Some vendors offer implementations of joined inheritance without the use of a discriminator column.
+Discriminator columns should be used if provider portability is required.
+
+@Entity
+@Table(name="EMP")
+@Inheritance(strategy=InheritanceType.JOINED)
+@DiscriminatorColumn(name="EMP_TYPE", discriminatorType=DiscriminatorType.INTEGER)
+public abstract class Employee { ... }
+
+@Entity
+@Table(name="CONTRACT_EMP")
+@DiscriminatorValue("1")
+public class ContractEmployee extends Employee { ... }
+@MappedSuperclass
+public abstract class CompanyEmployee extends Employee { ... }
+@Entity
+@Table(name="FT_EMP")
+@DiscriminatorValue("2")
+public class FullTimeEmployee extends CompanyEmployee { ... }
+@Entity
+@Table(name="PT_EMP")
+@DiscriminatorValue("3")
+public class PartTimeEmployee extends CompanyEmployee { ... }
+------------------------------------------------------------------------------------------------------------------------
+
+Table Per Concrete Class Strategy (337)
+
+A third approach  to mapping an entity hierarchy is to use an approach where a table is defined per concrete class.
+
+This has the effect ofcausing all shared state to be redefined in the tables of all the concrete entities that inherit it. This
+strategy is not required to be supported by providers but is included because it is anticipated that it will
+be required in a future release of the API.
+
+The negative side of using this strategy is that it makes polymorphic querying across a class
+hierarchy more expensive than the other strategies. The problem is that it must either issue multiple
+separate queries across each of the subclass tables, or query across all of them using a UNION operation,
+which is generally regarded as being expensive when lots of data is involved.
+
+In the joined case, every query requires a
+join, even when querying across a single concrete entity class. In the table-per-concrete-class case, it is
+akin to the single-table hierarchy because the query is confined to a single table. Another advantage is
+that the discriminator column goes away. Every concrete entity has its own separate table, and there is
+no mixing or sharing of schema, so no class indicator is ever needed.
+
+Mapping our example to this type of hierarchy is a matter of specifying the strategy as
+TABLE_PER_CLASS and making sure there is a table for each of the concrete classes.
+
+If a legacy database is
+being used, then the inherited columns could be named differently in each of the concrete tables and
+the @AttributeOverride annotation would come in handy.
+
+@Entity
+@Inheritance(strategy=InheritanceType.TABLE_PER_CLASS)
+public abstract class Employee {
+@Id private int id;
+private String name;
+@Temporal(TemporalType.DATE)
+@Column(name="S_DATE")
+private Date startDate;
+// ...
+}
+@Entity
+@Table(name="CONTRACT_EMP")
+@AttributeOverrides({
+@AttributeOverride(name="name", column=@Column(name="FULLNAME")),
+@AttributeOverride(name="startDate", column=@Column(name="SDATE"))
+})
+
+
+3 strategies for mapping inheritance:
+
+@Inheritance(strategy=InheritanceType.SINGLE_TABLE) <-- default same effect as @Inheritance
+@Inheritance(strategy=InheritanceType.JOINED)
+@Inheritance(strategy=InheritanceType.TABLE_PER_CLASS)
+
+------------------------------------------------------------------------------------------------------------
+Mixing Inheritance: (339)
+
+mixing inheritance type is outside JPA spec.
+
+support for this is vendor specific.
+
+data model includes a combination of single-table and joined-table designs within a single entity hierarchy.
 
 
 

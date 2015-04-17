@@ -1,1 +1,183 @@
 Advanced Topics (343):
+SQL queries:
+jpa supports native queries in plain sql.
+despite the enhancements made in JPA 2.0, still contains only a subset of the features
+supported by many database vendors. Inline views (subqueries in the FROM clause), hierarchical
+queries, access to stored procedures, and additional function expressions to manipulate date and time
+values are just some of the features not supported in JP QL.
+
+there are cases where the only way to achieve the performance required by an application is to replace the JP QL
+query with a hand-optimized SQL version.
+
+We recommend avoiding SQL initially if possible and then
+introducing it only when necessary.
+
+private static final String ORG_QUERY =
+"SELECT emp_id, name, salary " +
+"FROM emp " +
+"START WITH manager_id = ? " +
+"CONNECT BY PRIOR emp_id = manager_id";
+
+try {
+  conn = hrDs.getConnection();
+  sth = conn.prepareStatement(ORG_QUERY);
+  sth.setLong(1, managerId);
+  ResultSet rs = sth.executeQuery();
+  ArrayList<Employee> result = new ArrayList<Employee>();
+  while (rs.next()) {
+   Employee emp = new Employee();
+   emp.setId(rs.getInt(1));
+   emp.setName(rs.getString(2));
+   emp.setSalary(rs.getLong(3));
+   result.add(emp);
+}
+  return result;
+} catch (SQLException e) {
+  throw new EJBException(e);
+}
+
+
+
+Defining and executing sql queries:
+SQL queries may be defined dynamically at runtime or named in persistence unit metadata, similar to
+the JP QL query definitions discussed in Chapter 7. The key difference between defining JP QL and SQL
+queries lies in the understanding that the query engine should not parse and interpret vendor-specific
+SQL. In order to execute a SQL query and get entity instances in return, additional mapping information
+about the query result is required.
+
+The first and simplest form of dynamically defining a SQL query that returns an entity result is to
+use the createNativeQuery() method of the EntityManager interface, passing in the query string and the
+entity type that will be returned.
+
+em.createNativeQuery(sql, Employee.class);
+
+If the column aliases of the query do not match up exactly with the object-relational mappings for
+the entity, or if the results contain both entity and non-entity results, SQL result set mapping metadata is
+required. SQL result set mappings are defined as persistence unit metadata and are referenced by name.
+
+When the createNativeQuery() method is invoked with a SQL query string and a result set mapping
+name, the query engine uses this mapping to build the result set.
+
+Named SQL queries are defined using the @NamedNativeQuery annotation.
+
+
+Like JP QL named queries, the name of the query must be unique within the persistence unit.
+
+If the result type is an entity,
+the resultClass element may be used to indicate the entity class. If the result requires a SQL mapping,
+the resultSetMapping element may be used to specify the mapping name.
+
+@NamedNativeQuery(
+  name="orgStructureReportingTo",
+  query="SELECT emp_id, name, salary, manager_id, dept_id, address_id " +
+        "FROM emp " +
+	"START WITH manager_id = ? " +
+	"CONNECT BY PRIOR emp_id = manager_id",
+resultClass=Employee.class
+)
+
+
+One advantage of using named SQL queries is that the application can use the createNamedQuery()
+method on the EntityManager interface to create and execute the query. The fact that the named query
+was defined using SQL instead of JP QL is not important to the caller.
+
+A further benefit is that createNamedQuery() can return a TypedQuery whereas the createNativeQuery() method returns an
+untyped Query.
+
+One thing to be careful of with SQL queries that return entities is that the resulting entity instances
+become managed by the persistence context, just like the results of a JP QL query. If you modify one of
+the returned entities, it will be written to the database when the persistence context becomes associated
+with a transaction.
+
+This is normally what you want, but it requires that any time you select data that
+corresponds to existing entity instances, it is important to ensure that all the necessary data required to
+fully construct the entity is part of the query. If you leave out a field from the query, or default it to some
+value and then modify the resulting entity, there is a possibility that you will overwrite the correct
+version already stored in the database. This is because the missing state will be null (or some default
+value according to the type) in the entity. When the transaction commits, the persistence context does
+not know that the state was not properly read in from the query and might just attempt to write out null
+or the default value.
+
+
+SQL data-manipulation statements (INSERT, UPDATE, and DELETE) are also supported as a
+convenience so that JDBC calls do not have to be introduced in an application otherwise limited to JPA.
+To define such a query, use the createNativeQuery() method, but without any mapping information.
+
+em.createNativeQuery(INSERT_SQL)
+.setParameter(1, message)
+.executeUpdate();
+
+em.createNativeQuery(DELETE_SQL)
+.executeUpdate();
+
+SQL Result Set Mapping (348)
+A SQL result set mapping is defined using the @SqlResultSetMapping annotation. It may be placed
+on an entity class and consists of a name (unique within the persistence unit) and one or more entity
+and column mappings.
+
+@SqlResultSetMapping(
+  name="employeeResult",
+  entities=@EntityResult(entityClass=Employee.class)
+)
+
+Here we have defined a SQL result set mapping called employeeResult that may be referenced by
+any query returning Employee entity instances. The mapping consists of a single entity result, specified
+by the @EntityResult annotation, which references the Employee entity class. THe query must supply 
+values for all columns mapped by the entity, including foreign keys. It is vendor-specific whether the
+entity is partially constructed or whether an error occurs if any required entity state is missing.
+
+
+Mapping Foreign Keys(349)
+Multiple Result Mappings:
+a query may return more than one entity at a time;
+This is most often useful if there is a one-to-one relationship between two entities;
+
+For example:
+SELECT emp_id, name, salary, manager_id, dept_id, address_id, id, street, city, state, zip
+FROM emp, address
+WHERE address_id = id
+
+Mapping for this query:
+@SqlResultSetMapping(
+  name="EmployeeWithAddress",
+  entities={@EntityResult(entityClass=Employee.class),
+	    @EntityResult(entityClass=Address.class)}
+)
+
+Mapping Column Aliases
+If the column aliases in the SQL statement do not directly match up with the names specified in the
+column mappings for the entity, field result mappings are required for the query engine to make the
+correct association.
+
+Suppose, for example, that both the EMP and ADDRESS tables listed in the previous example 
+used the column ID for their primary key. The query would have to be altered to alias the ID
+columns so that they are unique:
+
+SELECT emp.id AS emp_id, name, salary, manager_id, dept_id, address_id,
+address.id, street, city, state, zip
+FROM emp, address
+WHERE address_id = address.id
+
+The @FieldResult annotation is used to map column aliases to the entity attributes in situations
+where the name in the query is not the same as the one used in the column mapping.
+More than one
+@FieldResult may be specified, but only the mappings that are different need to be specified.
+
+
+@SqlResultSetMapping(
+  name="EmployeeWithAddress",
+  entities={@EntityResult(entityClass=Employee.class,
+  fields=@FieldResult(
+    name="id",
+    column="EMP_ID")),
+  @EntityResult(entityClass=Address.class)}
+)
+
+---------------------------------------------------------------------------------------------------------
+Mapping Scalar Result Columns (350):
+
+
+
+
+
+

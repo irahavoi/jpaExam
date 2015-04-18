@@ -176,7 +176,125 @@ More than one
 ---------------------------------------------------------------------------------------------------------
 Mapping Scalar Result Columns (350):
 
+Mapping compound keys:
+@EntityResult(
+ entityClass=Employee.class,
+ fields={
+  @FieldResult(name="country", column="MGR_COUNTRY"),
+  @FieldResult(name="id", column="MGR_ID"),
+  @FieldResult(name="name", column="MGR_NAME"),
+  @FieldResult(name="salary", column="MGR_SALARY"),
+  @FieldResult(name="manager.country",
+   column="MGR_MGR_COUNTRY"),
+  @FieldResult(name="manager.id", column="MGR_MGR_ID")
+}
 
+
+Mappping Inheritance:
+
+The key thing to remember is that if the results include
+more than one entity type, each of the columns for all the possible entity types must be represented in
+the query.
+
+The only special
+element in the @EntityResult annotation for use with inheritance is the discriminatorColumn element.
+This element allows the name of the discriminator column to be specified in the unlikely event that it is
+different from the mapped version.
+
+To understand aliasing a discriminator column, consider the following query that returns data from
+another EMPLOYEE_STAGE table structured to use single-table inheritance:
+SELECT id, name, start_date, daily_rate, term, vacation, hourly_rate, salary, pension, type
+FROM employee_stage
+
+@SqlResultSetMapping(
+	name="EmployeeStageMapping",
+	entities=
+		@EntityResult(
+		 entityClass=Employee.class,
+		 discriminatorColumn="TYPE",
+		 fields={
+		  @FieldResult(name="startDate", column="START_DATE"),
+		  @FieldResult(name="dailyRate", column="DAILY_RATE"),
+		  @FieldResult(name="hourlyRate", column="HOURLY_RATE")
+
+---------------------------------------------------------------------------------------------------
+Parameter Binding : JPA guarantees only the use of positional parameter binding for sql queries.
+
+--------------------------------------------------------------------------------------------------
+
+
+Lifecycle callbacks:In order to respond to any one or more of the events, an entity
+class or any of its superclasses may declare one or more methods that will be invoked by the provider
+when the event gets fired. These methods are called callback methods.
+
+
+Lifecycle Events. Four categories: persisting, updating, removing, and loading.
+
+These are really data-level events that correspond to the database operations of inserting,
+updating, deleting, and reading; and except for loading, each has a Pre event and a Post event. In the
+load category there is only a PostLoad event because it would not make any sense for there to be PreLoad
+that was not yet built.
+
+Thus the full suite of lifecycle events that can occur is composed of
+PrePersist, PostPersist, PreUpdate, PostUpdate, PreRemove, PostRemove, and PostLoad.
+
+
+"PrePersist and PostPersist"
+The PrePersist event notifies an entity when EntityManager.persist() has been successfully invoked on
+it. PrePersist events may also occur on a merge() call when a new entity has been merged into the
+persistence context.
+
+If multiple entities are cascaded to during the same operation, the order in which the PrePersist
+callbacks occur cannot be relied upon.
+
+PostPersist events occur when an entity is inserted, which normally occurs during the transaction
+completion phase. Firing of a PostPersist event does not indicate that the entity has committed
+successfully to the database because the transaction in which it was persisted may be rolled back after
+the PostPersist event but before the transaction successfully commits.
+
+"PreRemove and PostRemove"
+When an EntityManager.remove() call is invoked on an entity, the PreRemove callback is triggered. This
+callback implies that an entity is being queued for deletion, and any related entities across relationships
+that have been configured with the REMOVE cascade option will also get a PreRemove notification. When
+the SQL for deletion of an entity finally does get sent to the database, the PostRemove event will get fired.
+As with the PostPersist lifecycle event, the PostRemove event does not guarantee success. The enclosing
+transaction may still be rolled back.
+
+"PreUpdate and PostUpdate"
+Updates to managed entities may occur at any time, either within a transaction or (in the case of an
+extended persistence context) outside a transaction. Because there is no explicit method on the
+EntityManager, the PreUpdate callback is guaranteed to be invoked only at some point before the
+database update. Some implementations may track changes dynamically and may invoke the callback
+on each change, while others may wait until the end of the transaction and just invoke the callback once.
+
+The PostUpdate callback occurs right after the
+database update. The same potential for rollback exists after PostUpdate callbacks as with PostPersist
+and PostRemove.
+
+"PostLoad"
+The PostLoad callback occurs after the data for an entity is read from the database and the entity
+instance is constructed. This can get triggered by any operation that causes an entity to be loaded,
+normally by either a query or traversal of a lazy relationship. It can also happen as a result of a refresh()
+call on the entity manager. When a relationship is set to cascade REFRESH, the entities that get cascaded
+to will also get loaded. The invocation of entities in a single operation, be it a query or a refresh, is not
+guaranteed to be in any order
+
+Tip: Other lifecycle methods may be defined by specific providers, such as when an entity is merged or
+copied/cloned.
+
+
+"Callback Methods" (355)
+Callback methods may be defined a few different ways, the most basic of which is to simply define a
+method on the entity class. Designating the method as a callback method involves two steps:
+1. Define a method with according to a given signature and annotate is with the appropriate annotation.
+The callback method may have any name, but must have a signature that takes no parameters and has a return type of void. 
+Final or static methods are not valid callback methods.
+
+Checked exceptions may not be thrown from callback methods because the method definition of a
+callback method is not permitted to include a throws clause. Runtime exceptions may be thrown,
+though, and if they are thrown while in a transaction, they will cause the provider to not only abandon
+invocation of subsequent lifecycle event methods in that transaction, but also mark the transaction for
+rollback.
 
 
 

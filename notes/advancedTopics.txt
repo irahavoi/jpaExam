@@ -296,6 +296,12 @@ though, and if they are thrown while in a transaction, they will cause the provi
 invocation of subsequent lifecycle event methods in that transaction, but also mark the transaction for
 rollback.
 
+A method is indicated as being a callback method by being annotated with a lifecycle event
+annotation. The relevant annotations match the names of the events listed earlier: @PrePersist,
+@PostPersist, @PreUpdate, @PostUpdate, @PreRemove, @PostRemove, and @PostLoad. A method may be
+annotated with multiple lifecycle event annotations, but only one lifecycle annotation of a given type
+may be present in an entity class.
 
+366
 
 

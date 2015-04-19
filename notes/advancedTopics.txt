@@ -381,6 +381,331 @@ Any entity may opt out of having the default entity listeners applied to it by u
 @ExcludeDefaultListeners annotation. When an entity is annotated with this annotation, none of the
 declared default listeners will get invoked for the lifecycle events for instances of that entity type.
 
+"Inheritance and lifecycle events"
+Inheriting callback methods;
+every callback method for a given event type will be invoked in the order
+according to its place in the hierarchy, most general classes first.
+
+Inheriting Entity listeners:
+listeners listed in the entity superclass annotation get invoked before the listeners in the subclass
+entities. In other words, defining an @EntityListeners annotation on an entity is additive in that it only
+adds listeners; it does not redefine them or their order of invocation.
+
+To redefine which entity listeners get invoked and their order of invocation, an entity or mapped
+superclass should be annotated with @ExcludeSuperclassListeners. This will cause the listeners defined
+in all the superclasses to not be invoked for any of the lifecycle events of the annotated entity subclass. If
+we want a subset of the listeners to still be invoked, they must be listed in the @EntityListeners
+annotation on the overriding entity and in the order that is appropriate.
+
+"Lifecycle event invocation order" (360)
+If a given lifecycle event X occurs for entity A, the provider will do the
+following:
+1. Check whether any default entity listeners exist (see Chapter 12). If they do,
+iterate through them in the order they are defined and look for methods that
+are annotated with the lifecycle event X annotation. Invoke the lifecycle method
+on the listener if a method was found.
+2. Check on the highest mapped superclass or entity in the hierarchy for classes
+that have an @EntityListeners annotation. Iterate through the entity listener
+classes that are listed in the annotation and look for methods that are
+annotated with the lifecycle event X annotation. Invoke the lifecycle method on
+the listener if a method was found.
+3. Repeat step 2 going down the hierarchy on entities and mapped superclasses
+until entity A is reached, and then repeat it for entity A.
+4. Check on the highest mapped superclass or entity in the hierarchy for methods
+that are annotated with the lifecycle event X annotation. Invoke the callback
+method on the entity if a method was found and the method is not also defined
+in entity A with the lifecycle event X annotation on it.
+5. Repeat step 2 going down the hierarchy on entities and mapped superclasses
+until entity A is reached.
+6. Invoke any methods that are defined on A and annotated with the lifecycle
+event X annotation.
+
+-----------------------------------------------------------------------------------------------------------
+"Validation" (363)
+ In Java EE 6, validation is
+considered a separate aspect of the application; a mechanism was developed and standardized (in JSR
+303) for the platform. It was also designed to function in a stand-alone Java SE environment.
+
+Using constraints:
+
+public class Employee {
+ @NotNull
+ private int id;
+ @NotNull(message="Employee name must be specified")
+ @Size(max=40)
+ private String name;
+ @Past
+ private Date startDate;
+ // ...
+}
+
+All validation constraints are defined in javax.validation.constraints package.
+
+@Null Element must be null
+@NotNull Element must not be null
+@AssertTrue Element must be true
+@AssertFalse Element must be false
+@Min long value() Element must have a value greater than or
+equal to the minimum
+@Max long value() Element must have a value less than or equal to
+the maximum
+@DecimalMin String value() Element must have a value greater than or
+equal to the minimum
+@DecimalMax String value() Element must have a value less than or equal to
+the maximum
+@Size int min() Element must have a value between the
+specified limits
+int max()
+@Digits int integer() Element must be a number within the specified
+range
+int fraction()
+@Past Element must be a date in the past
+@Future Element must be a date in the future
+@Pattern String regexpr() Element must match the specified regular
+expression
+Flag[] flags (Flags offer regular expression settings)
+
+
+Invoking Validation (365):
+The main API class for invoking validation on an object is javax.validation.Validator class
+
+Once Validator is obtained, you can call validate() method on it.
+
+Validation is designed similarly to JPA in many respects. It is divided into a set of APIs and a
+validation implementation, or validation provider, and the way that providers advertise themselves is by
+using the same service provider model. Providers contain META-INF/services files that indicate their SPI
+classes to be invoked.
+Like JPA, validation is used slightly differently depending upon whether it is used in container mode
+or in Java SE mode. In a container, a Validator instance may be injected into any Java EE component
+that supports injection. The example definition of a stateless session bean in Listing 11-18 shows that the
+regular Java EE @Resource injection annotation can be used.
+
+@Stateless
+ public class EmployeeOperationsEJB implements EmployeeOperations {
+ @Resource
+ Validator validator;
+ public void newEmployee(Employee emp) {
+ validator.validate(emp);
+ //…
+}
+//…
+}
+
+
+For non-container environment:
+ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
+
+Validator validator = factory.getValidator();
+
+When the validate method fails and a constraint is not satisfied, a ValidationException is thrown
+with an accompanying message String that is dictated by the definition of the constraint that was not
+met.
+
+Validation groups.
+It may be that the same object needs to be validated at different times for multiple different constraint
+sets. To achieve this, we would create separate validation groups and specify which group or groups the
+constraint belongs to.
+
+When a group is passed as an argument during validation, all constraints that are
+a part of that group are checked for validity. When no group is specified on a constraint or as an
+argument to the validate() method, the Default group is assumed.
+Groups are defined and referenced as classes.
+
+public interface FullTime extends Default {}
+public interface PartTime extends Default {}
+
+public class Employee {
+@NotNull
+private int id;
+@NotNull
+@Size(max=40)
+private String name;
+@NotNull(groups=FullTime.class)
+@Null(groups=PartTime.class)
+private long salary;
+@NotNull(groups=PartTime.class)
+@Null(groups=FullTime.class)
+private double hourlyWage;
+// ...
+}
+
+"Creating new Constraints" (368)
+
+One of the most valuable aspects of validation is the ability to add new constraints for a given
+application, or even to share across applications. Constraints may be implemented to be applicationspecific
+and tied to a particular business logic, or they may be generalized and bundled up in constraint
+libraries for reuse.
+
+Implementing a custom constraint annotation:
+
+/**
+* Indicate that a number should be even.
+* May be applied on fields or properties of type Integer.
+*/
+@Constraint(validatedBy={EvenNumberValidator.class})
+@Target({METHOD, FIELD})
+@Retention(RUNTIME)
+public @interface Even {
+ String message() default "Number must be even";
+ Class<?>[] groups() default {};
+ Class<? extends ConstraintPayload>[] payload() default {};
+ boolean includeZero() default true;
+}
+
+For each constraint annotation there must be one or more constraint implementation classes. Each class
+must implement the javax.validation.ConstraintValidator interface and provide the logic to validate
+the value being checked:
+
+public class EvenNumberValidator
+implements ConstraintValidator<Even,Integer> {
+boolean includesZero;
+public void initialize(Even constraint) {
+includesZero = constraint.includeZero();
+}
+public boolean isValid(Integer value,
+ConstraintValidatorContext ctx) {
+if (value == null)
+return true;
+if (value == 0)
+return includesZero;
+return value % 2 == 0;
+}
+}
+
+
+Validation in JPA (370):
+
+When validating JPA entities there is a specific integration required with the JPA provider. There are a few
+reasons for this integration.
+First and foremost, an entity may have lazily loaded attributes, and because a validator does not
+have a dependency on, or knowledge of, JPA, it would not know when an attribute has not been loaded.
+The process of validation could unwittingly cause the entire object graph to be loaded into memory!
+Another case is if validation is occurring on a JPA entity on the client side and the unloaded attributes
+are not even loadable. In this case, validation would produce an exception, not quite as bad as loading
+the entire object graph, but still clearly undesirable.
+
+The most practical reason for a JPA integration is that most often we want validation to be invoked
+automatically at specific lifecycle phases.
+
+It turns out that the most
+convenient lifecycle events to trigger validation at are PrePersist, PreUpdate, and PreRemove, so if
+validation is enabled these events will cause the validator to do its work.
+
+@Entity
+public class Employee {
+  @Id @NotNull
+  private int id;
+  @NotNull
+  @Size(max=40)
+  private String name;
+  @Past
+  private Date startDate;
+  @Embedded
+  @Valid
+  private EmployeeInfo info;
+  @ManyToOne
+  private Address address;
+  // ...
+}
+
+When an entity is validated, each of the fields or properties, or even the type itself, is validated
+according to the regular validation rules. However, the validation specification dictates that when a
+@Valid annotation is present on a field or property, the validation process proceeds to the object stored
+in that field or property. Embeddables may optionally be annotated with @Valid in order to be traversed
+during validation, but relationships may not: related entities, such as
+the Address, will also not be validated unless they themselves have been persisted, updated, or removed.
+
+Enabling Validation
+When no overriding settings are present at the JPA configuration level, validation is on by default when a
+validation provider is on the classpath. To explicitly control whether validation should be enabled or
+disabled there are two possible settings:
+
+"validation-mode" element in the persistence.xml file. This element may be set to
+one of three possible values:
+1. "AUTO" —Turn on validation when a validation provider is present on the
+classpath (default)
+2. "CALLBACK" —Turn on validation and throw an error if no validation provider is
+available
+3. "NONE" —Turn off validation
+
+javax.persistence.validation.mode persistence property. This property may be
+specified in the Map passed to the createEntityManagerFactory() method and
+overrides the validation-mode setting if present. Possible values are the string
+equivalents of the validation-mode values, "auto", "callback", and "none", and
+have exactly the same meanings as their validation-mode counterparts.
+
+
+
+"Setting Lifecycle Validation Groups"
+By default, each of the PrePersist and PreUpdate lifecycle events will trigger validation on the affected
+entity, immediately following the event callback, using the Default validation group.
+
+To change the groups being validated at the three
+different lifecycle event types, any of the following properties may be specified, either as properties in
+the properties section of the persistence.xml file, or in the Map passed into
+createEntityManagerFactory():
+
+javax.persistence.validation.group.pre-persist—Set the groups to validate
+at PrePersist time
+javax.persistence.validation.group.pre-update—Set the groups to validate at
+PreUpdate time
+javax.persistence.validation.group.pre-remove—Set the groups to validate at
+PreRemove time
+
+By setting these properties to a particular group or groups, you can isolate the kinds of validation
+that get performed on entities across different lifecycle events. For example, you may create groups
+called Create, Update, and Remove, and then when you want some kind of validation to occur on one or
+more of these events you need only set the groups on the relevant constraints to be checked.
+
+------------------------------------------------------------------------------------------------------------------------------
+"Concurrency" (372):
+Entity Operations
+A managed entity belongs to a single persistence context and should not be managed by more than one
+persistence context at any given time. This is an application responsibility, however, and may not
+necessarily be enforced by the persistence provider. Merging the same entity into two different open
+persistence contexts could produce undefined results.
+
+Entity managers and the persistence contexts that they manage are not intended to be accessed by
+more than one concurrently executing thread. The application cannot expect it to be synchronized and
+is responsible for ensuring that it stays within the thread that obtained it.
+
+Entity Access
+Applications may not access an entity directly from multiple threads while it is managed by a persistence
+context. An application may choose, however, to allow entities to be accessed concurrently when they
+are detached. If it chooses to do so, the synchronization must be controlled through the methods coded
+on the entity. Concurrent entity state access is not recommended, however, because the entity model
+does not lend itself well to concurrent patterns.
+
+It would be preferable to simply copy the entity and pass
+the copied entity to other threads for access and then merge any changes back into a persistence context
+when they need to be persisted.
+
+Refreshing Entity State:
+The refresh() method of the EntityManager interface can be useful in situations when we know or
+suspect that there are changes in the database that we do not have in our managed entity. The refresh
+operation applies only when an entity is managed because when we are detached we typically only need
+to issue a query to get an updated version of the entity from the database.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

@@ -10,6 +10,7 @@ import javax.persistence.Column;
 import javax.persistence.ElementCollection;
 import javax.persistence.Embedded;
 import javax.persistence.Entity;
+import javax.persistence.EntityListeners;
 import javax.persistence.EnumType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
@@ -24,6 +25,7 @@ import javax.persistence.NamedQueries;
 import javax.persistence.NamedQuery;
 import javax.persistence.OneToOne;
 
+import com.rahavoi.entity.listener.EmployeeDebugListener;
 import com.rahavoi.type.PhoneType;
 
 @NamedQueries({
@@ -34,6 +36,7 @@ import com.rahavoi.type.PhoneType;
 		@NamedQuery(name = "Employee.findByName", 
 					query = "SELECT e FROM Employee e WHERE e.name = :name") })
 @Entity
+@EntityListeners({EmployeeDebugListener.class})
 public class Employee {
 	
 	@Id

@@ -304,4 +304,83 @@ may be present in an entity class.
 
 366
 
+Enterprise contexts (357)
+
+Entity Listeners: 357
+Callback methods in the entity are fine when you don’t mind if the event callback logic is included in the
+entity, but what if you want to pull the event handling behavior out of the entity class into a different
+class?
+
+class? To do this, you can use an entity listener.
+
+it is a class on which
+you can define one or more lifecycle callback methods to be invoked for the lifecycle events of an entity.
+
+only one method in each listener class may be
+annotated for each event type. Multiple event listeners may be applied to an entity, though.
+
+On an entity listener, a
+callback method must have a similar signature as on an entity with the exception that it must also have a
+single defined parameter of a type that is compatible with the entity type, as the entity class, a superclass
+(including Object), or an interface implemented by the entity. A method with the signature public void
+foo(Object o) {} is an example of a valid callback method on an entity listener. The method must then
+be annotated with the necessary event annotation(s).
+
+Entity listener classes must be stateless, meaning that they should not declare any fields. A single
+instance may be shared among multiple entity instances and may even be invoked upon concurrently
+for multiple entity instances. In order for the provider to be able to create instances of the entity listener,
+every entity listener class must have a public no-argument constructor.
+
+ Attaching Entity Listeners to Entities:
+
+An entity designates the entity listeners that should be notified of its lifecycle events through the use of
+the @EntityListeners annotation. One or more entity listeners may be listed in the annotation.
+
+When a
+lifecycle event occurs, the provider will iterate through each of the entity listeners in the order in which
+they were listed and instantiate an instance of the entity listener class that has a method annotated with
+the annotation for the given event. It will invoke the callback method on the listener, passing in the
+entity to which the event applies. After it has done this for all the listed entity listeners, it will invoke the
+callback method on the entity if there is one.
+
+If any of the listeners throws an exception, it will abort the
+callback process, causing the remaining listeners and the callback method on the entity to not be
+invoked.
+
+Entity
+@EntityListeners({EmployeeDebugListener.class, NameValidator.class})
+public class Employee{ .. }
+
+public class EmployeeDebugListener {
+@PrePersist
+public void prePersist(Employee emp) {
+System.out.println("Persist on employee id: " + emp.getId());
+}
+
+In general, when a
+callback method accesses state beyond what should be publicly accessible, it is best suited to being in
+the entity and not in an entity listener.
+
+
+"Default Entity Listeners"
+   A listener may be attached to more than one type of entity simply by being listed in the
+@EntityListeners annotation of more than one entity. This can be useful in cases where the listener
+provides a more general facility or wide-ranging runtime logic.
+
+For even broader usage of an entity listener across all the entities in a persistence unit, one or more
+default entity listeners may be declared. There is currently no standard annotation target for persistence
+unit scoped metadata, so this kind of metadata can be declared only in an XML mapping file.
+
+When a list of default entity listeners is declared, it will be traversed in the order they were listed in
+the declaration, and each one that has a method annotated or declared for the current event will be
+invoked upon.
+Default entity listeners will always get invoked before any of the entity listeners listed in
+the @EntityListeners annotation for a given entity.
+
+Any entity may opt out of having the default entity listeners applied to it by using the
+@ExcludeDefaultListeners annotation. When an entity is annotated with this annotation, none of the
+declared default listeners will get invoked for the lifecycle events for instances of that entity type.
+
+
+
 

@@ -36,7 +36,7 @@ public class App
         
         
         
-        /*CriteriaBuilder cb = em.getCriteriaBuilder();
+        CriteriaBuilder cb = em.getCriteriaBuilder();
         CriteriaQuery<Employee> c = cb.createQuery(Employee.class);
         Root<Employee> emp = c.from(Employee.class);
         
@@ -46,10 +46,10 @@ public class App
         
         TypedQuery<Employee> q = em.createQuery(c);
         
-        q.getResultList();*/
+        q.getResultList();
         
-        EmployeeService eService = new EmployeeService(em);
-        eService.tupleTest();
+        //EmployeeService eService = new EmployeeService(em);
+        //eService.tupleTest();
        
         //List<Employee> result = eService.findEmployees("Joet", null, null, null);
         //List<Employee> allEmployees = eService.findAllEmployees();

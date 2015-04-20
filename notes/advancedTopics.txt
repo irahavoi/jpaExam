@@ -742,6 +742,118 @@ As with the identifier, the application should not set or change the version fie
 been created. It might access it, though, for its own purposes if it wants to make use of the version
 number for some application-dependent reason.
 
+Some providers do not require that the version field be defined and stored in the entity. Variations of
+storing it in the entity are storing it in a vendor-specific cache, or not storing anything at all but instead using field
+comparison. For example, a popular option is to compare some application-specified combination of the entity
+state in the database with the entity state being written and then use the results as criteria to decide whether state
+has been changed.
+------------------------------------------------------------------------------------------------------------------------------
+Advanced Optimistic Locking Mode (378)
+By default JPA assumes Read Committed Isolation - guarantees that any changes made inside a transaction will not be visible to other transactions 
+until the changing transaction has been committed.
+
+Satisfying tighter locking constraints than what this locking offers requires that an additional locking strategy be used. 
+To be portable, these strategies can be used only on entities with version fields.
+
+Locking options can be specified by means of a number of different calls:
+
+EntityManager.lock()—Explicit method for locking of objects already in
+persistence context
+
+EntityManager.refresh()—Permits a lock mode to be passed in and applies to the
+object in the persistence context being refreshed
+
+EntityManager.find()—Permits a lock mode to be passed in and applies to the
+object being returned
+
+Query.setLockMode()—Sets the lock mode to be in effect during execution of the
+query
+-----------------------------------------------------------------------------------------
+Optimistic Read Locking. 
+Repeatable Read isolation level means that once a
+transaction has accessed data and another transaction modifies that data, at least one of the
+transactions must be prevented from committing. An optimistic read lock in JPA provides this level of
+isolation.
+
+To optimistically read-lock an entity, a lock mode of LockModeType.OPTIMISTIC can be passed to one
+of the locking methods. The resulting lock will guarantee that both the transaction that obtains the entity
+read lock and any other that tries to change that entity instance will not both succeed. At least one will
+fail, but like the database isolation levels, which one fails depends upon the implementation.
+
+The way read locking is implemented is entirely up to the provider. Even though it is called an
+optimistic read lock, a provider might choose to be heavy-handed and obtain an eager write lock on the
+entity, in which case any other transaction that tries to change the entity will fail or block until the
+locking transaction completes.
+
+The provider will, however, most often optimistically read-lock the
+object, meaning that the provider will not actually go to the database for a lock when the locking method
+is called. It will instead wait until the end of the transaction, and at commit time it will reread the entity
+to see if the entity has been changed since it was last read in the transaction. If it has not changed, the
+read lock was honored, but if the entity has changed, the gamble was lost and the transaction will be
+rolled back.
+
+--------------------------------------------------------------------------------------------
+Optimistic Write Locking "OPTIMISTIC_FORCE_INCREMENT".
+
+The write lock guarantees all that
+the optimistic read lock does, but also pledges to increment the version field in the transaction
+regardless of whether a user updated the entity or not. This provides a promise of an optimistic lock
+failure if another transaction also tries to modify the same entity before this one commits.
+
+This is equivalent to making a forced update to the entity in order to trigger the version number to be
+augmented, and is why the option is called OPTIMISTIC_FORCE_INCREMENT.
+--------------------------------------------------------------------------------------------
+Recovering from optimistic failures (383):
+An optimistic failure means that one or more of the entities that were modified were not fresh enough to
+be allowed to record their changes. The version of the entity that was modified was stale, and the entity
+had since been changed in the database, hence an OptimisticLockException was thrown.
+
+one solution might be to get a fresh copy of the entity
+and then re-apply the changes. In other cases, it might only be possible to give the client (such as a web
+browser) an indication that the changes were in conflict with another transaction and must be
+reentered. The harsh reality of it is that in the majority of cases it is neither practical nor feasible to
+handle optimistic lock problems other than to simply retry the operation at a convenient transactional
+demarcation point.
+
+The first problem you might encounter when an OptimisticLockException is thrown could be the
+one you never see. Depending on what your settings are, for example whether the calling bean is
+container-managed or bean-managed, and whether the interface is remote or local, you might only get a
+container-initiated EJBException. This exception will not necessarily even wrap the
+OptimisticLockException because all that is formally required of the container is to log it before
+throwing the exception.
+
+
+The solution to this problem is to perform a flush() operation from inside the container-managed
+transaction at the moment just before we are ready to complete the method. This forces a write to the
+database and locks the resources only at the end of the method so the effects on concurrency are
+minimized. It also allows us to handle an optimistic failure while we are in control, without the container
+interfering and potentially swallowing the exception.
+
+public void adjustEmployeeSalary(int id, long salary) {
+  Employee emp = em.find(Employee.class, id);
+  emp.setSalary(salary);
+  // ...
+  flushChanges();
+}
+
+protected void flushChanges() {
+ try {
+  em.flush();
+ } catch (OptimisticLockException optLockEx) {
+  throw new ChangeCollisionException();
+ }
+}
+
+@ApplicationException
+public class ChangeCollisionException extends RuntimeException {
+ public ChangeCollisionException() { super(); }
+}
+
+
+
+
+
+
 
 
 

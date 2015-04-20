@@ -687,6 +687,66 @@ operation applies only when an entity is managed because when we are detached we
 to issue a query to get an updated version of the entity from the database.
 
 
+"Locking" (376)
+Optimistic Locking  (not only the most prevalent, but also the most useful way to scale an application)
+
+The optimistic locking model
+subscribes to the philosophy that there is a good chance that the transaction in which changes are made
+to an entity will be the only one that actually changes the entity during that interval. This translates into
+the decision to not acquire a lock on the entity until the change is actually made to the database, usually
+at the end of the transaction.
+
+When the data actually does get sent to the database to get updated at flush time or at the end of the
+transaction, the entity lock is acquired and a check is made on the data in the database. The flushing
+transaction must see whether any other transaction has committed a change to the entity in the
+intervening time since this transaction read it in and changed it. If a change occurred, it means that the
+flushing transaction has data that does not include those changes and should not write its own changes
+to the database lest it overwrite the changes from the intervening transaction. At this stage, it must roll
+back the transaction and throw a special exception called OptimisticLockException.
+
+The question that you might have been asking is how the provider can know whether somebody made
+changes in the intervening time since the committing transaction read the entity. The answer is that the
+provider maintains a versioning system for the entity. In order for it to do this, the entity must have a
+dedicated persistent field or property declared in it to store the version number of the entity that was
+obtained in the transaction. The version number must also be stored in the database. When going back
+to the database to update the entity, the provider can check the version of the entity in the database to
+see if it matches the version that it obtained previously. If the version in the database is the same, the
+change can be applied and everything goes on without any problems. If the version was greater,
+somebody else changed the entity since it was obtained in the transaction, and an exception should be
+thrown. The version field will get updated both in the entity and in the database whenever an update to
+the entity is sent to the database.
+
+
+Version fields are not required, but we recommend that version fields be in every entity that has any
+chance of being concurrently modified by more than one process. A version column is an absolute
+necessity whenever an entity gets modified as a detached entity and merged back into a persistence
+context again afterward. The longer an entity stays in memory, the higher the chance that it will be
+changed in the database by another process, rendering the in-memory copy invalid. Version fields are at
+the core of optimistic locking and provide the best and most performant protection for infrequent
+concurrent entity modification.
+Version fields are defined simply by annotating the field or property on the entity with a @Version
+annotation.
+
+@Entity
+public class Employee {
+ @Id private int id;
+ @Version private int version;
+ // ...
+}
+
+Version-locking fields defined on the entity can be of type int, short, long, the corresponding
+wrapper types, and java.sql.Timestamp. The most common practice is just to use int or one of the
+numeric types, but some legacy databases use timestamps.
+
+As with the identifier, the application should not set or change the version field once the entity has
+been created. It might access it, though, for its own purposes if it wants to make use of the version
+number for some application-dependent reason.
+
+
+
+
+
+
 
 
 

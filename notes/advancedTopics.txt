@@ -849,6 +849,51 @@ public class ChangeCollisionException extends RuntimeException {
  public ChangeCollisionException() { super(); }
 }
 
+The
+ChangeCollisionException class is annotated with @ApplicationException, which is an EJB container
+annotation in the javax.ejb package, to indicate to the container that the exception is not really a
+system-level exception but should be thrown back to the client as-is. Normally, defining an application
+exception will cause the container to not roll back the transaction, but this is an EJB 3 container notion.
+
+The client code that we saw earlier can now receive and handle the application exception and
+potentially do something about it. At the very least, it is aware of the fact that the failure was a result of a
+data collision instead of some other more fatal error.
+
+In general it is quite difficult to code for the optimistic exception case. When running in a server
+environment, chances are that any OptimisticLockException will be wrapped by an EJB exception or
+server exception. The best approach is to simply treat all transaction failures equally and retry the
+transaction from the beginning or to indicate to the browser client that they must restart and retry.
+
+----------------------------------------------------------------------------------------------------------------
+Pessimistic Locking (386)
+
+Pessimistic locking implies obtaining a lock on one or more objects immediately, instead of
+optimistically waiting until the commit phase and hoping that the data has not changed in the database
+since it was last read in.
+
+pessimistic lock is synchronous in that by the time the locking call returns, it is
+guaranteed that the locked object will not be modified by another transaction until after the current
+transaction completes and releases its lock. This does not leave the window open for transaction failure
+due to concurrent changes, a very real possibility when simple optimistic locking is used.
+
+This is likely one of the reasons why many developers tend to use pessimistic
+locking because it is always easier to write your application logic when you know up front whether your
+update will succeed or not.
+
+In actuality, though, they are often limiting the scalability of their applications because needless
+locking serializes many operations that could easily occur in parallel. The reality is that very few
+applications actually need pessimistic locking, and those that do only need it for a limited subset of
+queries. The rule is that if you think you need pessimistic locking, think again. If you are in a situation
+where you have a very high degree of write concurrency on the same object(s) and the occurrence of
+optimistic failures is high, then you might need pessimistic locking because the cost of retries can
+become so prohibitively expensive that you are better off locking pessimistically. If you absolutely
+cannot retry your transactions and are willing to sacrifice some amount of scalability for it, this also
+might lead you to use pessimistic locking.
+
+Pessimistic Locking Modes (386)
+  Pessimistic Write Locking:
+
+
 
 
 

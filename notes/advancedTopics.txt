@@ -1069,6 +1069,164 @@ Caching can be
 configured at the level of the global persistence unit or on a per-class basis. It is achieved through a
 combination of a persistence unit setting and class settings.
 
+The persistence unit cache setting is controlled by the shared-cache-mode element in the
+persistence.xml file or the equivalent javax.persistence.sharedCache.mode property that can be passed
+in at entity manager factory creation time.
+
+NOT_SPECIFIED means the shared cache setting is not explicitly specified in the persistence.xml file or by the
+presence of the javax.persistence.sharedCache.mode property, it is up to the provider to either cache or
+not cache, depending upon its own defaults and inclinations.
+
+different providers have different implementations that rely more or less heavily on caching
+
+Two other options, ALL and NONE, are more obvious in their meaning and semantics, and cause the
+shared cache to be completely enabled or disabled, respectively.
+
+Setting the cache mode to NONE
+can not only cause severe slowdown to the application but also potentially defeat provider mechanisms that
+optimize for caching.
+
+When an entity class is highly volatile and highly concurrent it is occasionally advantageous to
+disable caching of instances only of that class. This is achieved by setting the shared cache to
+DISABLE_SELECTIVE and then annotating the specific entity class that is to remain uncached with
+@Cacheable(false). The DISABLE_SELECTIVE option will cause the default behavior to cache every entity
+in the persistence unit. Each time an entity class is annotated with @Cacheable(false), you are effectively
+overriding the default and disabling the cache for instances of that entity type. This can be done to as
+many entity classes as you want. When applied to an entity class, the cacheability of its subclasses is also
+affected by the @Cacheable annotation on the entity. It can be overridden, though, at the level of the
+subclass, if the need arises.
+
+If you get to the point where you have to annotate more classes than not, you can go the opposite
+route and set the shared cache to ENABLE_SELECTIVE, meaning that the default is to disable caching for all
+entities except those that have been annotated with @Cacheable(true) (or just @Cacheable because the
+default value of @Cacheable is true). In a nutshell, the @Cacheable annotation is useful when either of the
+two *_SELECTIVE options are in effect, and depending upon which is active, the boolean values in all the
+@Cacheable annotations in the persistence unit should be all true or all false.
+
+
+Summary:
+"javax.persistence.sharedCache.mode" property
+shared-cache-mode in persistence.xml
+Possible values:
+NOT_SPECIFIED
+ALL
+NONE
+DISABLE_SELECTED <-- cache all but those with @Cacheable(false)
+ENABLE_SELECTED <-- do not cache anything but @Cacheable or Cacheable(true)
+
+-------------------------------------------------------------------------------------
+Dynamic Cache Management (394)
+
+It is also possible at runtime to override whether entities get read from the cache during query execution
+or get put into the cache when entities are obtained from the database.
+
+In order for these overrides to be
+in effect, though, caching must already be enabled for the relevant entity class(es).
+
+The
+property names are:
+"javax.persistence.cache.retrieveMode" and 
+"javax.persistence.cache.storeMode"
+
+with the values being members of the CacheRetrieveMode and CacheStoreMode enumerated types,
+respectively.
+
+The retrieve mode has two simple options: 
+CacheRetrieveMode.USE <-- to use the cache when reading entities from the database,
+CacheRetrieveMode.BYPASS <-- to bypass the cache.
+
+The USE option is the
+default because caching must be enabled anyway for the property to be used. When BYPASS is active,
+entities should not be looked for in the shared cache. Note that the only reason USE even exists is to allow
+resetting the retrieve mode back to using the cache when an entity manager is set to BYPASS.
+
+Under normal circumstances the retrieve mode will have no practical effect if the entities are already
+present in the persistence context. Retrieve mode only dictates whether a lookup in the shared cache is
+performed. If queried entities exist in the active persistence context, those instances will always be returned.
+
+The store mode supports a default "CacheStoreMode.USE option", which places objects in the cache
+when obtained from or committed to the database. The "CacheStoreMode.BYPASS" option can be used to
+cause instances not to be inserted into the shared cache. A third store mode option,
+"CacheStoreMode.REFRESH", is useful when objects may change outside the realm of the shared cache. For
+example, if an entity can be changed by a different application that uses the same database, or even by a
+different entity manager factory (perhaps in a different JVM in a cluster), the instance in the shared
+cache might become stale. Setting the store mode to REFRESH will cause the entity instance in the cache
+to be refreshed the next time it is read from the database.
+
+
+The REFRESH option should always be turned on if there is a chance that application data may be
+changed from outside of the JPA application.
+
+HashMap props = new HashMap();
+props.put("javax.persistence.cache.storeMode", CacheStoreMode.REFRESH);
+em.refresh(emp, props);
+
+
+Using the dynamic caching options is preferred over simply disabling the cache, either globally or
+on a per-class basis. It gives you fine-grained control over performance and consistency and still offers
+the provider the opportunity to optimize for the cases when optimization is appropriate.
+
+--------------------------------------------------------------------------------------------
+Utility Classes (396)
+
+A handful of methods are available on two utility interfaces, "PersistenceUnitUtil" and "PersistenceUtil"
+in the javax.persistence package. These methods will not be used often by an application at runtime,
+but can be useful primarily for tool providers or in application frameworks.
+
+PersistenceUtil
+---------------------------------
+An instance of PersistenceUtil is obtained from the Persistence class in both Java SE and Java EE
+environments. The static getPersistenceUtil() method is the only method on the Persistence class that
+a managed or container-based application would normally use in a managed environment. It exports
+only two methods, both variants of determining whether state is loaded or not. The isLoaded(Object)
+method will return whether the entity passed in has all of its non-lazy state loaded.
+
+Persistence.getPersistenceUtil().isLoaded(
+	em.getReference(Employee.class, 42));
+
+The second variant, isLoaded(Object, String), accepts an extra String parameter describing a
+named attribute of the entity, and returns whether that attribute has been loaded in the entity instance
+passed in. It will return false either if isLoaded(Object) is false, or if the attribute is marked as lazy and
+has not been loaded.
+
+Persistence.getPersistenceUtil().isLoaded(
+	em.find(Employee.class, 42), "phoneNumbers");
+The PersistenceUtil class would be used only on the client side, or in a different application layer
+from persistence, when the entity manager or factory associated with the entity is not known. Each of
+the methods enters a provider resolution phase before calling the corresponding method on the correct
+provider. This may add some overhead, depending upon the implementation, caching of providers, and
+frequency of calling. On the server side, I might know which entity manager or factory to use for the
+entity, and in that case the more efficient PersistenceUnitUtil class, described in the next section,
+should be used instead.
+
+--------------------------------
+PersistenceUnitUtil
+A PersistenceUnitUtil instance can be obtained from an entity manager factory through the
+getPersistenceUnitUtil() method.
+
+The same two isLoaded() methods are defined on the PersistenceUnitUtil class as were defined on
+the PersistenceUtil class. The difference is that invoking them on this class does not require provider
+resolution. The PersistenceUnitUtil interface is implemented by the provider, so the user is already
+invoking a provider class that is assumed to have intimate knowledge of the domain model mappings
+and the supporting JPA implementation
+
+An additional method named getIdentifier() returns the value of the identifier attribute if the
+entity has a simple or an embedded identifier. If the entity has multiple identifier attributes, an instance
+of the identifier class will be returned. This method enables a layer to dynamically obtain the identifier of
+a given entity without having to know anything about the entity mappings, or even its type.
+
+public List<Object> getEntityIdentifiers(List<T> entities) {
+  PersistenceUnitUtil util = emf.getPersistenceUnitUtil();
+  List<Object> result = new ArrayList<Object>();
+  for (T entity : entities) {
+   result.add(util.getIdentifier(entity));
+  }
+  return result;
+}
+
+
+
+
 
 
 

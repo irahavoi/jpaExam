@@ -993,6 +993,85 @@ Caching Layers: (390)
 * EntityManagerFactory - Shared Cache
 * JDBC Driver Table/Column Cache
 
+Application Layer.
+Any application might be written to
+cache as many entities as it likes simply by holding on to references to them. This should be done with
+the realization that the entities are likely going to become detached at some point, and the longer they
+sit in application space, the higher the probability they will become stale. Application caches have their
+place, but are generally discouraged because the cached entity instances will never be included in any
+future JPA query results or persistence contexts.	
+
+Next, the persistence context referenced by an entity manager can be considered a cache because it
+keeps references to all the managed entities. If, as is done in hardware architectures, we categorize the
+different layers of caching into levels, we would call the persistence context the first real level of JPA
+caching because it is the first place that a persistence provider could retrieve an in-memory entity from.
+
+When running in a transaction-scoped entity manager that has a persistence context demarcated by the
+transaction boundaries, the persistence context can be termed a transactional cache.
+
+When the entity manager is an extended one, its persistence
+context cache is longer-lived and will go away only when the entity manager is cleared or closed.
+
+Executing a find() or a query method can be thought of as loading one or more entities into the
+cache, while invoking detach() on an entity can in some ways be considered a persistence context cache
+eviction of that entity. The difference is that if there are pending state changes in that entity they will be
+lost unless a flush operation occurs before the entity is detached.
+
+Caching in the entity manager factory - shared cache.
+
+The last cache that can contribute entity state to JPA is the JDBC driver cache. Most drivers cache
+connections and statements. Some caches also keep track of table or column state that is essentially
+transparent to the JPA provider, but that nonetheless can offer some savings in terms of not having to go
+to the database to get data on every call. This is generally feasible in the driver only if it is known that
+either the data is read-only or the driver controls database access exclusively.
+
+
+Note: Some providers, such as the EclipseLink JPA 2.0 Reference Implementation, provide much more
+sophisticated and exotic caching layers and features, such as isolated caching for Virtual Private Database (VPD)
+support, fine-grained options to determine automatic entity eviction policies, and distributed cache coordination
+mechanisms. Many also offer integrations with deluxe and highly specialized distributed caching products.	
+
+Employee emp = em.find(Employee.class, 100);
+
+The first thing that happens is that the client looks in its local cache for the employee and finds that
+it doesn’t have that Employee instance with id 100. It then issues the find() call on the entity manager.
+The entity manager will likely have a persistence context associated with it, so it checks in its persistence
+context for the entity of type Employee with id 100. If the entity exists in the persistence context, the
+managed instance is returned. If it does not exist or no persistence context had yet been associated with
+the entity manager, the entity manager goes to the factory to see if the shared cache has the entity
+instance. If it does, a new Employee instance with id 100 is created from the shared one and inserted into
+the persistence context, and the new managed instance is returned to the caller. If it is not in the shared
+cache, an SQL query is generated to select the entity from the database. The JDBC driver may have some
+data cached, so it could short-circuit the select clause and return at least part of the needed data. The
+resulting query data is then composed into an object and passed back. That object is inserted into the
+shared entity manager factory cache, and a new instance copy of it is created and inserted into the
+persistence context to be managed. That entity instance is finally returned to the client application for
+the client to cache, if it is so inclined.
+
+Shared Cache 391.
+The shared cache is manipulated in JPA through a slim javax.persistence.Cache interface. An
+object that implements Cache can be obtained from the entity manager factory by invoking
+EntityManagerFactory.getCache().
+
+Even if a provider does not support caching, a Cache object will be returned; 
+the difference being that the operations will have no effect.
+
+The interface currently supports only a contains() method and a few method variants of eviction.
+While it isn’t a very full API, applications should not really be using a caching interface in application
+code, so not much of an API is necessary. In general, caching operations are useful primarily for testing
+and debugging, and applications should not need to dynamically modify the cache at runtime. The most
+convenient way to use the cache is to simply clear it between test cases to ensure proper cleanup and
+isolate test behavior.
+
+----------------------------------
+Static Configuration of the Cache (393):
+Caching can be
+configured at the level of the global persistence unit or on a per-class basis. It is achieved through a
+combination of a persistence unit setting and class settings.
+
+
+
+
 
 
 

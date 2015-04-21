@@ -892,6 +892,113 @@ might lead you to use pessimistic locking.
 
 Pessimistic Locking Modes (386)
   Pessimistic Write Locking:
+PESSIMISTIC_WRITE
+
+This mode will be translated by most providers
+into a SQL "SELECT FOR UPDATE" statement in the database, obtaining a write lock on the entity so no
+other applications can modify it.
+
+entityManager.lock(employee, LockModeType.PESSIMISTIC_WRITE);
+entityManager.setVacationDays(emp.getVacationDays() + accruedDays);
+
+The state of the object may be change by another transaction after it is fetched but before the lock is acquired.
+
+The solution is to either acquire the lock on the employee up front in the find() method (and risk
+the scalability implications) or do a locking refresh().
+
+Employee emp = em.find(Employee.class, id);
+// Find amt according to union rules and emp status
+EmployeeStatus status = emp.getStatus();
+double accruedDays = calculateAccrual(status);
+if (accruedDays > 0) {
+em.refresh(emp, LockModeType.PESSIMISTIC_WRITE);
+if (status != emp.getStatus())
+accruedDays = calculateAccrual(emp.getStatus());
+if (accruedDays > 0)
+emp.setVacationDays(emp.getVacationDays() + accruedDays);
+}
+-------------------------------------
+Pessimistic Read Locking
+databases support locking mechanisms to get repeatable read isolation without acquiring a write
+lock. A PESSIMISTIC_READ mode can be used to pessimistically achieve repeatable read semantics when
+no writes to the entity are expected.
+
+When an entity locked with a pessimistic read lock does end up getting modified, the lock will be
+upgraded to a pessimistic write lock. However, the upgrade might not occur until the entity is flushed, so
+it is of little efficacy because a failed lock acquisition exception won’t be thrown until transaction
+commit time, rendering the lock equivalent to an optimistic one.
+
+Pessimistic Forced Increment Locking
+Like the OPTIMISTIC_FORCE_INCREMENT, this mode will
+also increment the version field of the locked entity regardless of whether changes were made to it.
+----------------------------------------
+
+Pessimistic Scope
+When it comes to pessimistic locking, acquiring exclusive locks on entities in other entity tables can
+increase the likelihood of deadlock occurring.
+
+To avoid this, the default behavior of pessimistically
+locking queries is to not acquire locks on tables that are not mapped to the entity. An extra property
+exists to enable this behavior in case someone needs to acquire the locks as part of a pessimistic query:
+
+"javax.persistence.lock.scope=PessimisticLockScope.EXTENDED"
+
+When set, target tables of unidirectional relationships, element
+collection tables, and owned many-to-many relationship join tables will all have their corresponding
+rows pessimistically locked.
+
+This property should normally be avoided, except when it is absolutely necessary to lock such tables
+as join tables that cannot be conveniently locked any other way. Strict ordering and a solid
+understanding of the mappings and operation ordering should be a prerequisite to enabling this
+property to ensure that deadlocks do not result.
+
+Pessimistic Timeouts:
+Although JPA does not normatively describe how providers must support timeout modes for pessimistic lock
+acquisition, JPA does define a hint that providers can use.
+
+Though not mandatory, the
+javax.persistence.lock.timeout hint is likely supported by the major JPA providers, however, make
+sure that your provider supports it before coding to this hint. Its value can be either “0”, meaning do not
+block waiting for the lock, or some integer describing the number of milliseconds to wait for the lock.
+
+Usage:
+Map<String,Object> props = new HashMap<String,Object>();
+props.put("javax.persistence.lock.timeout",5000);
+em.find(Employee.class, 42, LockModeType.PESSIMISTIC_WRITE, props);
+
+It can also be set on a query as a hint:
+TypedQuery<Employee> q = em.createQuery(
+ "SELECT e FROM EMPLOYEE e WHERE e.id = 42", Employee.class);
+q.setLockMode(LockModeType.PESSIMISTIC_WRITE);
+q.setHint("javax.persistence.lock.timeout",5000);
+---------------------------------------------------------------------------------
+Recovering from Pessimistic Failures:
+When a failure occurs as a result of not being able to acquire a lock during a query, or for any reason
+that is considered by the database as being non-fatal to the transaction, a LockTimeoutException will be
+thrown, and the caller can catch it and simply retry the call if he desires to do so.
+
+However, if the failure
+is severe enough to cause a transaction failure, a PessimisticLockException will be thrown and the
+transaction will be marked for rollback.
+-----------------------------------------------------------------------------------
+Caching
+Caching is a fairly broad term that generally implies saving something in memory for quicker access later
+on. Even in a JPA context, caching can mean rather different things to different people, depending upon
+the perspective.
+
+Caching Layers: (390)
+
+* Application Cache
+* Entity Manager - Persistence Context
+* EntityManagerFactory - Shared Cache
+* JDBC Driver Table/Column Cache
+
+
+
+
+
+
+
 
 
 

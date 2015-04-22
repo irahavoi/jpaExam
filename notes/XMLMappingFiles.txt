@@ -1,2 +1,66 @@
 XML Mapping Files (399)
 ------------------------------------------------------------------------
+simplified logic for obtaining the metadata for the persistence unit:
+1. Process the annotations. The set of entities, mapped superclasses, and
+embedded objects (we’ll call this set E) is discovered by looking for the @Entity,
+@MappedSuperclass, and @Embeddable annotations. The class and method
+annotations in all the classes in set E are processed, and the resulting metadata
+is stored in set C. Any missing metadata that was not explicitly specified in the
+annotations is left empty.
+
+2. Add the classes defined in XML. Look for all the entities, mapped superclasses,
+and embedded objects that are defined in the mapping files and add them to E.
+If we find that one of the classes already exists in E, we apply the overriding
+rules for class-level metadata that we found in the mapping file. Add or adjust
+the class-level metadata in C according to the overriding rules.
+
+3. Add the attribute mappings defined in XML. For each class in E, look at the
+fields or properties in the mapping file and try to add the method metadata to
+C. If the field or property already exists there, apply the overriding rules for
+attribute-level mapping metadata.
+
+4. Apply defaults. Determine all default values according to the scoping rules and
+where defaults might have been defined (see the following for description of
+default rules). The classes, attribute mappings, and other settings that have not
+yet been filled in are assigned values and put in C.
+
+------------------------------------------------------------------------------
+Mapping File.
+
+each mapping file that is supplied must conform and be
+valid against the orm_2_0.xsd schema located at http://java.sun.com/xml/ns/persistence/orm_2_0.xsd.
+
+Typical XML header for a mapping file:
+
+<?xml version="1.0" encoding="UTF-8"?>
+<entity-mappings xmlns="http://java.sun.com/xml/ns/persistence/orm"
+ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ xsi:schemaLocation="http://java.sun.com/xml/ns/persistence/orm
+  http://java.sun.com/xml/ns/persistence/orm_2_0.xsd"
+   version="2.0">
+
+
+The root element of the mapping file is called entity-mappings
+
+The subelements of entity-mappings can be categorized into four main
+scoping and functional groups: 
+1. persistence unit defaults, 
+2. mapping files defaults, 
+3. queries and generators,
+4. managed classes and mappings
+-----------------------------------------------------------------------------------
+Disabling Annotations 401.
+
+For those who are perfectly happy with XML and don’t feel the need for annotations, there are ways to
+skip the annotation processing phase:
+
+xml-mapping-metadatacomplete
+element and metadata-complete attribute provide a convenient way to reduce the overhead
+that is required to discover and process all the annotations on the classes in the persistence unit.
+
+It is
+also a way to effectively disable any annotations that do exist. These options will cause the processor to
+completely ignore them as if they did not exist at all.
+
+
+

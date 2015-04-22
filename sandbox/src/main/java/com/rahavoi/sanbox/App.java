@@ -11,6 +11,8 @@ import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Root;
 
+import org.hibernate.LockMode;
+
 import com.rahavoi.entity.Department;
 import com.rahavoi.entity.Employee;
 import com.rahavoi.entity.ParkingSpace;
@@ -34,7 +36,7 @@ public class App
     	EntityManagerFactory emf = Persistence.createEntityManagerFactory("EmployeeFactory");
         EntityManager em = emf.createEntityManager();
         
-        
+        LockMode.PE
         
         CriteriaBuilder cb = em.getCriteriaBuilder();
         CriteriaQuery<Employee> c = cb.createQuery(Employee.class);

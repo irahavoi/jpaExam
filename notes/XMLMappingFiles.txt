@@ -62,5 +62,20 @@ It is
 also a way to effectively disable any annotations that do exist. These options will cause the processor to
 completely ignore them as if they did not exist at all.
 
+The xml-mapping-metadata-complete element needs to be in only one of the mapping files if there
+are multiple mapping files in the persistence unit.
 
+It is specified as an empty subelement of the
+persistence-unit-metadata element, which is the first subelement of entity-mappings.
+
+<entity-mappings>
+ <persistence-unit-metadata>
+  <xml-mapping-metadata-complete/>
+ </persistence-unit-metadata>
+ ...
+</entity-mappings>
+
+
+If enabled, there is no way to portably override this setting. It will apply globally to the persistence unit,
+regardless of whether any metadata-complete attribute is set to false in an entity.
 

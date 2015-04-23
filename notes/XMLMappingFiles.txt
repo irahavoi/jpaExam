@@ -79,3 +79,51 @@ persistence-unit-metadata element, which is the first subelement of entity-mappi
 If enabled, there is no way to portably override this setting. It will apply globally to the persistence unit,
 regardless of whether any metadata-complete attribute is set to false in an entity.
 
+Persistence Unit Defaults
+<persistence-unit-defaults>
+	schema, 
+	catalog, 
+	delimited-identifiers, 
+	access, 
+	cascade-persist, 
+	and entitylisteners
+
+
+
+------------------------------------------------------------------
+Queries and Generators (409):
+
+Sequence generator:
+<entity-mappings>
+...
+	<sequence-generator name="empGen" sequence-name="empSeq"/>
+...
+</entity-mappings>
+
+Table generator:
+<entity-mappings>
+...
+	<table-generator name="empGen" table="ID_GEN" pk-column-value="EmpId"/>
+...
+</entity-mappings>
+
+named query:
+A named-query element can appear as a subelement of entity-mappings or as a subelement of
+entity. Regardless of where it is defined, it will be keyed by its name in the persistence unit query
+namespace.
+
+<entity-mappings>
+...
+<named-query name="findEmpsWithName">
+	<query>SELECT e FROM Employee e WHERE e.name LIKE :empName</query>
+	<hint name="javax.persistence.cacheRetrieveMode"
+		value="CacheRetrieveMode.BYPASS"/>
+</named-query>
+<named-query name="findEmpsWithHigherSalary">
+	<query><![CDATA[SELECT e FROM Employee e WHERE e.salary > :salary]]></query>
+</named-query>
+...
+</entity-mappings>
+
+named-native-query   (411)
+-------------------------

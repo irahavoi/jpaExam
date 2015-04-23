@@ -127,3 +127,129 @@ namespace.
 
 named-native-query   (411)
 -------------------------
+Native SQL can also be used for named queries by defining a @NamedNativeQuery annotation (refer to
+Chapter 11) or by specifying a named-native-query element in a mapping file
+
+Both named queries and
+native queries share the same query namespace in the persistence unit, so using either the named-query
+or named-native-query element will cause that query to override any query of the same name defined in
+annotation form.
+
+native-named-query element can appear as
+a subelement of entity-mappings or as a subelement of entity
+
+The only difference is that two additional attributes have been added to named-native-query to supply
+the result class or the result set mapping
+
+One use case for overriding queries is when the DBA comes to you and demands that your query run
+a certain way on a certain database. You can leave the query as generic JP QL for the other databases, but
+it turns out that, for example, the Oracle database can do this one particular thing very well using native
+syntax. By putting this query in a DB-specific XML file, it will be much easier to manage in the future.
+
+@NamedQuery(name="findAllManagers"
+query="SELECT e FROM Employee e WHERE e.directs IS NOT EMPTY")
+@Entity
+public class Employee { ... }
+
+
+<entity-mappings>
+...
+<named-native-query name="findAllManagers"
+result-class="examples.model.Employee">
+<query>
+SELECT /*+ FULL(m) */ e.id, e.name, e.salary,
+e.manager_id, e.dept_id, e.address_id
+FROM emp e,
+(SELECT DISTINCT manager_id AS id FROM emp) m
+WHERE e.id = m.id
+</query>
+</named-native-query>
+...
+</entity-mappings>
+
+sql-result-set-mapping
+-------------------------------------------
+A result set mapping is used by native queries to instruct the persistence provider how to map the
+results. The sql-result-set-mapping element corresponds to the @SqlResultSetMapping annotation
+
+Just
+as @SqlResultSetMapping encloses arrays of @EntityResult or @ColumnResult, or both, so also can the sqlresult-
+set-mapping element contain multiple entity-result and column-result elements. And
+similarly, because each @EntityResult contains an array of @FieldResult, the entity-result element can
+contain multiple field-result elements. The other entityClass and discriminatorColumn elements of
+the @EntityResult annotation map directly to the entity-class and discriminator-column attributes of
+the entity-result element.
+
+Each sql-result-set-mapping can define a new mapping or override an existing one of the same
+name that was defined by an annotation. It is not possible to override only a part of the result set
+mapping. If you’re overriding an annotation, the entire annotation will be overridden, and the
+components of the result set mapping defined by the sql-result-set-mapping element will apply.
+
+@SqlResultSetMapping(
+  name="DepartmentSummary",
+  entities={
+    @EntityResult(entityClass=Department.class,
+      fields=@FieldResult(name="name", column="DEPT_NAME")),
+    @EntityResult(entityClass=Employee.class)
+  },
+  columns={@ColumnResult(name="TOT_EMP"),
+           @ColumnResult(name="AVG_SAL")}
+)
+<entity-mappings>
+...
+ <sql-result-set-mapping name="DepartmentSummary">
+  <entity-result entity-class="examples.model.Department">
+    <field-result name="name" column="DEPT_NAME"/>
+  </entity-result>
+  <entity-result entity-class="examples.model.Employee"/>
+  <column-result name="TOT_EMP"/>
+  <column-result name="AVG_SAL"/>
+</sql-result-set-mapping>
+...
+</entity-mappings>
+
+--------------------------------------------------------------------------------
+Managed Classes and Mappings (413):
+The main portion of every mapping file will typically be the managed classes in the persistence unit that
+are the entity, mapped-superclass, and embeddable elements and their state and relationship mappings.
+
+Each of them has its class specified as a class attribute of the element and its access type specified in an
+access attribute. The access attribute is required only when there are no annotations on the managed
+class or when metadata-complete (or xml-mapping-metadata-complete) has been specified for the class. If
+neither of these conditions apply and annotations do exist on the class, the access attribute setting
+should match the access used by the annotations.
+
+
+For entities, an optional cacheable attribute can also be set to a boolean value. This attribute
+corresponds to the @Cacheable annotation and when specified will override the value of the annotation.
+Like the annotation, it dictates whether the shared cache is used for instances of the entity class, and is
+applicable only when the shared-cache-mode (see Chapter 13) is set to one of the selective modes. The
+cacheable attribute is inherited by subclasses and is overridden by either the @Cacheable annotation on
+the subclass, or the cacheable attribute in the subclass element.
+Queries and generators can be specified within an entity element. Generators can also be defined
+inside an id element in an entity or mapped superclass.
+
+Attributes
+----------------
+The attributes element is a subelement of the entity, mapped-superclass, and embeddable
+elements. It is an enclosing element that groups all the mapping subelements for the fields or properties
+of the managed class. Because it is only a grouping element, it does not have an analogous annotation. It
+dictates which mappings are allowed for each type of managed class.
+
+Each
+attribute has a name attribute (in the XML attribute sense) that is required to indicate the name of the attribute
+(in this case, we mean field or property) that it is mapping
+
+A general comment about overriding attribute mappings is that overriding annotations with XML is
+done at the level of the attribute (field or property) name. Our algorithm will apply to these mappings as
+they are keyed by attribute name, and XML overrides will be applied by attribute name alone. All the
+annotated mapping information for the attribute will be overridden as soon as a mapping element for
+that attribute name is defined in XML.
+
+There is nothing to stop the type of attribute mapping defined in annotation form from being
+overridden in XML to be a different mapping type. The provider is responsible only for implementing
+the overriding rules and likely won’t prevent this kind of behavior. This leads us to our second comment
+about overriding, which is that when overriding annotations, we should use the correct and compatible
+XML mapping. There are some cases where it might be valid to actually map an attribute differently in
+XML, but these cases are few and far between and primarily for exceptional types of testing or
+debugging.

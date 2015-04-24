@@ -489,3 +489,41 @@ Like their annotation counterparts, the XML relationship and collection elements
 associations and element collections.
 
 many-to-one
+This element corresponds to the @ManyToOne annotation and, like the basic mapping, has fetch, optional and
+access attributes.
+
+Normally the target entity is known by the provider because the field or property is almost always of
+the target entity type, but if not then the target-entity attribute should also be specified.
+
+When the
+many-to-one foreign key contributes to the identifier of the entity and the @MapsId annotation described
+in Chapter 10 applies then the maps-id attribute would be used. The value, when required, is the name of
+the embeddable attribute of the embedded id class that maps the foreign key relationship. If, on the
+other hand, the relationship is part of the identifier but a simple @Id would be applied to the relationship
+field or property, the boolean id attribute of the many-to-one element should be specified and set to true.
+
+Unique to relationships is the ability to cascade operations across them. The cascade settings for a
+relationship dictate which operations are cascaded to the target entity of the many-to-one mapping. To
+specify how cascading should occur, a cascade element should be included as a subelement of the manyto-
+one element. Within the cascade element, we can include our choice of empty cascade-all, cascadepersist,
+cascade-merge, cascade-remove, cascade-refresh, or cascade-detach subelements that dictate
+that the given operations be cascaded. Of course, specifying cascade elements in addition to the
+cascade-all element is simply redundant.
+
+When it comes to relationships, there are times
+where you will want to test the performance of a given operation and would like to be able to set certain
+relationships to load eagerly or lazily. You will not want to go through the code and have to keep
+changing these settings back and forth, however. It would be more practical to have the mappings that
+you are tuning in XML and just change them when required.
+
+<entity class="examples.model.Employee">
+...
+  <attributes>
+...
+    <many-to-one name="address" fetch="LAZY"/>
+    <many-to-one name="manager" fetch="LAZY">
+     <join-column name="MGR"/>
+    </many-to-one>
+...
+  </attributes>
+</entity>

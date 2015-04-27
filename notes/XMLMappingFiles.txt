@@ -527,3 +527,377 @@ you are tuning in XML and just change them when required.
 ...
   </attributes>
 </entity>
+
+
+one-to-many
+A one-to-many mapping is a collection-valued association, and the collection can be a List, Map,
+Set, or Collection. If it is a List, the elements can be populated in a specific order by specifying an
+order-by subelement. This element corresponds to the @OrderBy annotation and will cause the contents
+of the list to be ordered by the specific field or property name that is specified in the element content.
+
+
+Alternatively, a List can have its order persisted using an order-column subelement, which provides all
+the functionality of its @OrderColumn annotation counterpart.
+
+If the collection is a Map, there are a number of different options, depending upon the key type. If the
+key type is a field or property of the target entity, an optional map-key subelement can be specified to
+indicate the name of the field or property to use as the key. This element corresponds to the @MapKey
+annotation and will default to the primary key field or property when none is specified. If the key type is
+an entity, a map-key-join-column can be used, whereas if the key is a basic type, a map-key-column
+subelement indicates the column that stores the key. Furthermore, for basic keys, map-key-enumerated
+or map-key-temporal can be used if the basic type is an enumerated or temporal type, respectively. If the
+key type is an embeddable type, map-key-attribute-override can be specified to override where an
+embedded field or property of the embeddable type is mapped. The map-key-class subelement is
+included to indicate the type of the key when the Map is not generically typed, and the key is not a field or
+property of the target entity.
+
+<entity class="examples.model.Employee">
+...
+<attributes>
+...
+<one-to-many name="directs" mapped-by="manager">
+<order-by/>
+</one-to-many>
+<many-to-one name="manager"/>
+...
+</attributes>
+</entity>
+
+one-to-one
+To map a one-to-one association, the one-to-one element must be used. This element corresponds to
+the @OneToOne annotation
+
+A one-to-one element might contain a join-column element if it is the owner of the relationship or it
+might have multiple join-column elements if the association is to an entity with a compound primary
+key. In some legacy systems, it is mapped using a join table, so a join-table element should be used in
+this case.
+
+@Entity
+public class Employee {
+// ...
+@OneToOne(mappedBy="employee")
+private ParkingSpace parkingSpace;
+// ...
+}
+@Entity
+public class ParkingSpace {
+@Id
+private int id;
+// ...
+@OneToOne @MapsId
+private Employee employee;
+// ...
+}
+orm.xml snippet:
+<entity-mappings>
+<entity class="examples.model.Employee">
+<attributes>
+...
+<one-to-one name="parkingSpace" mapped-by="employee"/>
+...
+</attributes>
+</entity>
+<entity class="examples.model.ParkingSpace">
+<attributes>
+...
+<one-to-one name="employee" maps-id=”true”/>
+...
+</attributes>
+</entity>
+</entity-mappings>
+
+many-to-many
+Creating a many-to-many association is done through the use of a many-to-many element. This element
+corresponds to the @ManyToMany annotation (refer to Chapter 4) and has the same optional targetentity,
+fetch, access, and mapped-by attributes that were described in the one-to-many mapping.
+
+
+
+element-collection
+A collection of basic or embeddable objects is mapped using an element-collection element, which
+corresponds to the @ElementCollection annotation (refer to Chapter 5) and has the same optional
+target-entity, fetch, and access attributes that were described in the one-to-many and many-to-many
+mapping sections
+
+If the collection is a List, one of order-by or order-column can be specified as a subelement. If the
+collection is a Map and contains embeddables as values, a map-key element can be used to indicate that a
+field or property in the embeddable value is to be used as the map key. Alternatively, the various mapkey-
+column, map-key-join-column, map-key-enumerated, map-key-temporal, map-key-attribute-override,
+and map-key-class can be used as described in the one-to-many section.
+
+<entity class="examples.model.Employee">
+<attributes>
+...
+<element-collection name="projectHours" target-class=”java.lang.Integer“>
+<map-key-class name="java.lang.String"/>
+<map-key-column name="PROJ_NAME"/>
+<column name="HOURS_WORKED"/>
+<collection-table name="PROJ_TIME"/>
+</element-collection>
+</attributes>
+</entity>
+
+
+Embedded object mappings:
+
+An embedded object is a class that depends on its parent entity for its identity. Embedded objects are
+specified in XML using the embedded element and are customized using the attribute-override element.
+
+embedded
+An embedded element is used for mapping an embedded object contained within a field or property
+
+It corresponds to the @Embedded annotation, and permits an access attribute to be
+specified to dictate whether the state is to be accessed using a field or property. Because the persistent
+state is mapped within the embedded object, only the attribute-override and association-override
+subelements are allowed within the embedded element.
+
+There must be an embeddable class entry in a mapping file for the embedded object, or it must be
+annotated as @Embeddable.
+
+@Entity
+public class Employee {
+// ...
+@Embedded
+private Address address;
+// ...
+}
+@Embeddable
+public class Address {
+private String street;
+private String city;
+private String state;
+private String zip;
+// ...
+}
+
+
+<entity-mappings>
+  <entity class="examples.model.Employee">
+    <attributes>
+      ...
+      <embedded name="address"/>
+      ...
+    </attributes>
+  </entity>
+  <embeddable class="examples.model.Address"/>
+</entity-mappings>
+
+attribute-override
+When an embedded object is used by multiple entity types, it is likely that some of the basic mappings
+in the embedded object will need to be remapped by one or more of the entities
+
+The attribute-override element can be specified as a subelement of the embedded, embedded-id, and
+element-collection elements to accommodate this case.
+
+The annotation that corresponds to the attribute-override element is the @AttributeOverride
+annotation. This annotation can be on the entity class or on a field or property that stores an embedded
+object, collection of embedded objects, or embedded id. When an @AttributeOverride annotation is
+present in the entity, it will be overridden only by an attribute-override element in the entity mapping
+file entry that specifies the same named field or property. Our earlier algorithm still holds if we think of
+the attribute overrides as keyed by the name of the field or property that they are overriding. All the
+annotation overrides for an entity are gathered, all the XML overrides for the class are applied on top of
+the annotation overrides. If there is an override in XML for the same named field or property, it will
+overwrite the annotated one. The remaining non-overlapping overrides from annotations and XML will
+also be applied.
+The attribute-override element stores the name of the field or property in its name attribute and the
+column that the field or property maps to as a column subelement. Listing 12-28 revisits Listing 12-27 and
+overrides the state and zip fields of the embedded address.
+
+<embedded name="address">
+<attribute-override name="state">
+<column name="PROV"/>
+</attribute-override>
+<attribute-override name="zip">
+<column name="PCODE"/>
+</attribute-override>
+</embedded>
+
+
+
+
+association-override
+Embeddable objects also support relationship mappings, although it is a less common requirement.
+When a many-to-one or one-to-one relationship is present in an embeddable, a join column is mapped
+either explicitly or by default by the association in the embedded object. Reusing the embeddable type
+within another entity class means there is a possibility that the join column will need to be remapped.
+The association-override element, which corresponds to the @AssociationOverride annotation (refer to
+Chapter 10), can be included as a subelement of the embedded, embedded-id and element-collection
+elements to accommodate this case
+
+<association-override name="city">
+  <join-column name="CITY_ID"/>
+</association-override>
+
+
+
+Inheritance mappings (429)
+An entity inheritance hierarchy is mapped using the inheritance, discriminator-column, and
+discriminator-value elements. If the inheritance strategy is changed, it must be overridden for the
+entire entity hierarchy.
+
+
+inheritance
+The inheritance element is specified to indicate the root of an inheritance hierarchy. It corresponds to
+the @Inheritance annotation and indicates the inheritance-mapping strategy that is to be used. When it
+is included in the entity element, it will override any inheritance strategy that is defined or defaulted in
+the @Inheritance annotation on the entity class.
+
+Changing the inheritance strategy can cause repercussions that spill out into other areas. For
+example, changing a strategy from single table to joined will likely require adding a table to each of the
+entities below it.
+
+<entity class="examples.model.Employee">
+  <table name="EMP"/>
+  <inheritance strategy="JOINED"/>
+  ...
+</entity>
+
+discriminator-column
+Discriminator columns store values that differentiate between concrete entity subclasses in an
+inheritance hierarchy
+
+The discriminator-column element is a subelement of the
+entity or entity-result elements and is used to define or override the discriminator column. It
+corresponds to and overrides the @DiscriminatorColumn annotation and has attributes that include the
+name, discriminator-type, columnDefinition, and length. It is an empty element that has no
+subelements.
+
+<entity class="examples.model.Employee">
+  <inheritance/>
+  <discriminator-column name="TYPE"/>
+...
+</entity >
+
+
+discriminator-value
+
+A discriminator-value element is used to declare the value that identifies the concrete entity subclass
+that is stored in a database row.
+
+The discriminator-value element corresponds to the @DiscriminatorValue annotation and
+overrides it when it exists on the entity class. As with the other inheritance overrides, it is seldom used
+as an override. Even when a hierarchy is remapped to a different database or set of tables, it will not
+normally be necessary to override the value.
+
+
+<entity class="examples.model.FullTimeEmployee">
+  <discriminator-value>FT</discriminator-value>
+  ...
+</entity>
+
+attribute-override and association-override
+Simple mappings and associations can be overridden through the use of attribute overrides and
+association overrides, but only in the case of an entity that is the subclass of a mapped superclass.
+Simple persistent state or association state that is inherited from an entity superclass cannot portably be
+overridden.
+
+<entity class="examples.model.PartTimeEmployee">
+...
+<attribute-override name="name">
+<column name="EMP_NAME"/>
+</attribute-override>
+<attribute-override name="salary">
+<column name="SAL"/>
+</attribute-override>
+<association-override name="manager">
+<join-column name="MGR_NAME" referenced-column-name="EMP_NAME"/>
+<join-column name="MGR_DOB" referenced-column-name="DOB"/>
+</association-override>
+...
+</entity>
+
+Lifecycle Events (432)
+All the lifecycle events that can be associated with a method in an entity listener can also be associated
+directly with a method in an entity or mapped superclass (refer to Chapter 11). The pre-persist, postpersist,
+pre-update, post-update, pre-remove, post-remove, and post-load methods are all valid
+subelements of the entity or mapped-superclass elements. Each of them can occur only once in each
+class. Each lifecycle event element will override any entity callback method of the same event type that
+might be annotated in the entity class.
+
+Before anyone goes out and overrides all their annotated callback methods with XML overrides, we
+should mention that the use case for doing such a thing borders on, if not completely falls off into, the
+non-existent.
+
+<entity class="examples.model.Employee">
+...
+  <pre-persist method-name="initTransientState"/>
+  <post-load method-name="initTransientState"/>
+...
+</entity>
+
+Entity Listeners:
+
+Lifecycle callback methods defined on a class other than the entity class are called entity listeners. The
+following sections describe how to configure entity listeners in XML using the entity-listeners element
+and how to exclude inherited and default listeners.
+
+entity-listeners
+One or more ordered entity listener classes can be defined in an @EntityListeners annotation on an
+entity or mapped superclass
+
+When a lifecycle event fires, the listeners that have
+methods for the event will get invoked in the order in which they are listed. The entity-listeners
+element can be specified as a subelement of an entity or mapped-superclass element to accomplish
+exactly the same thing. It will also have the effect of overriding the entity listeners defined in an
+@EntityListeners annotation with the ones defined in the entity-listeners element.
+
+An entity-listeners element includes a list of ordered entity-listener subelements, each of
+which defines an entity-listener class in its class attribute. For each listener, the methods
+corresponding to lifecycle events must be indicated as subelement events. The events can be one or
+more of pre-persist, post-persist, pre-update, post-update, pre-remove, post-remove, and post-load,
+which correspond to the @PrePersist, @PostPersist, @PreUpdate, @PostUpdate, @PreRemove, @PostRemove,
+and @PostLoad annotations, respectively. Each of the event subelements has a method-name attribute that
+names the method to be invoked when its lifecycle event is triggered. The same method can be supplied
+for multiple events, but no more than one event of the same type can be specified on a single listener
+class.
+The entity-listeners element can be used to disable all the entity listeners defined on a class or
+just add an additional listener. Disabling listeners is not recommended, of course, because listeners
+defined on a class tend to be fairly coupled to the class itself, and disabling them might introduce bugs
+into either the class or the system as a whole.
+
+
+<entity class="examples.model.Employee">
+...
+<entity-listeners>
+  <entity-listener class="examples.listeners.EmployeeAuditListener">
+    <post-persist method-name="employeeCreated"/>
+    <post-update method-name="employeeUpdated"/>
+    <post-remove method-name="employeeRemoved"/>
+  </entity-listener>
+  <entity-listener class="examples.listeners.NameValidator">
+    <pre-persist method-name="validateName"/>
+  </entity-listener>
+  <entity-listener class="examples.listeners.EmployeeExitListener">
+    <post-remove method-name="notifyIT"/>
+  </entity-listener>
+</entity-listeners>
+...
+</entity>
+
+
+exclude-default-listeners
+The set of default entity listeners that applies to all entities is defined in the entity-listeners
+subelement of the persistence-unit-defaults element (see the entity-listeners section). These
+listeners can be turned off or disabled for a particular entity or hierarchy of entities by specifying an
+empty exclude-default-listeners element within the entity or mapped-superclass element. This is
+equivalent to the @ExcludeDefaultListeners annotation, and if either one is specified for a class, default
+listeners are disabled for that class. Note that exclude-default-listeners is an empty element, not a
+Boolean. If default entity listeners are disabled for a class by an @ExcludeDefaultListeners annotation,
+there is currently no way to re-enable them through XML
+
+
+exclude-superclass-listeners
+Entity listeners defined on the superclass of an entity will normally be fired before the entity listeners
+defined on the entity class itself are fired
+
+To disable the listeners defined on an
+entity superclass or mapped superclass, an empty exclude-superclass-listeners element can be
+supplied inside an entity or mapped-superclass element. This will disable the superclass listeners for the
+managed class and all its subclasses.
+The exclude-superclass-listeners element corresponds to the @ExcludeSuperclassListeners
+annotation and, like the exclude-default-listeners/@ExcludeDefaultListeners pair, either one of the
+two can be specified in order to disable the superclass listeners for the entity or mapped superclass and
+its subclasses.
+
+
+

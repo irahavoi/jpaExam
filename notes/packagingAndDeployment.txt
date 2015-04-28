@@ -32,3 +32,110 @@ needed if the server defaults the remaining information, but not all servers wil
 require other persistence unit metadata to be present, such as the data source to be accessed.
 
 Transaction Type (436)
+Normally, when running in a managed server environment, the
+JTA transaction mechanism is used. It is the default transaction type that a server will assume when
+none is specified for a persistence unit and is generally the only one that most applications will ever
+need, so in practice the transaction type will not need to be specified very often.
+
+When you want to use resource-local transactions
+instead of JTA, the transaction-type attribute of the persistence-unit element is used to explicitly
+declare the transaction type of RESOURCE_LOCAL or JTA, as in the following example:
+
+<persistence-unit name="EmployeeService" transaction-type="RESOURCE_LOCAL"/>
+
+
+Persistence Provider:
+The Java Persistence API has a pluggable Service Provider Interface (SPI) that allows any compliant Java
+EE server to communicate with any compliant persistence provider implementation. Servers normally
+have a default provider, though, that is native to the server, meaning that it is implemented by the same
+vendor or is shipped with the server. In most cases, this default provider will be used by the server, and
+no special metadata will be necessary to explicitly specify it.
+
+In order to switch to a different provider, the provider-supplied class that implements the
+javax.persistence.spi.PersistenceProvider interface must be listed in the provider element.
+
+The only
+requirement is that the provider JARs be on the server or application classpath and accessible to the
+running application at deployment time.
+
+Eclipse Link Provicer configuration:
+
+<persistence-unit name="EmployeeService">
+  <provider>org.eclipse.persistence.jpa.PersistenceProvider</provider>
+</persistence-unit>
+
+Data Source (437):
+A fundamental part of the persistence unit metadata is the description of where the provider should
+obtain database connections from in order to read and write entity data. The target database is specified
+in terms of the name of a JDBC data source that is in the server JNDI space. This data source must be
+globally accessible since the provider accesses it when the persistence application is deployed.
+The typical case is that JTA transactions are used, so it is in the jta-data-source element that the
+name of the JTA data source should be specified. Similarly, if the transaction type of the persistence unit
+is resource-local, the non-jta-data-source element should be used.
+
+<persistence-unit name="EmployeeService">
+  <jta-data-source>java:app/jdbc/EmployeeDS</jta-data-source>
+</persistence-unit>
+
+in Java EE 6 three new namespaces were introduced to allow names to refer to
+global, application or module scope. By using the corresponding standard namespace prefixes of java:global,
+java:app, or java:module, a resource can be made available to other components in a wider scope than just
+the component, and the name would be portable across container implementations.
+
+<persistence-unit name="EmployeeService">
+ <jta-data-source>java:app/jdbc/EmployeeDS</jta-data-source> 
+  <non-jta-data-source>java:app/jdbc/NonTxEmployeeDS</non-jta-data-source>
+</persistence-unit>
+
+-------------------------------------------------------------------------------------------------
+Mapping Files
+
+If a mapping file named “orm.xml” exists in a META-INF directory on the classpath, for example beside
+the persistence.xml file, it does not need to be explicitly listed. The provider will automatically search
+for such a file and use it if one exists. Mapping files that are named differently or are in a different
+location must be listed in the mapping-file elements in the persistence.xml file.
+
+
+<persistence-unit name="EmployeeService">
+  <jta-data-source>java:app/jdbc/EmployeeDS</jta-data-source>
+  <mapping-file>META-INF/employee_service_queries.xml</mapping-file>
+  <mapping-file>META-INF/employee_service_entities.xml</mapping-file>
+</persistence-unit>
+
+
+----------------------------------------------------------------------------------------------------
+
+Managed Classes (439):
+Managed classes are all the classes that must be processed and considered in a persistence unit,
+including entities, mapped superclasses, and embeddable classes.
+
+The set of entities, mapped superclasses, and embedded objects that will be managed in a particular
+persistence unit is determined by the provider when it processes the persistence unit. At deployment
+time it may obtain managed classes from any of four sources. A managed class will be included if it is
+among the following:
+
+* Local classes: the annotated classes in the deployment unit in which its
+persistence.xml file was packaged.
+* Classes in mapping files: the classes that have mapping entries in an XML
+mapping file.
+* Explicitly listed classes: the classes that are listed as class elements in the
+persistence.xml file.
+* Additional JARs of managed classes: the annotated classes in a named JAR listed
+in a jar-file element in the persistence.xml file
+
+Local classes - When a JAR
+is deployed with a persistence.xml file in the META-INF directory, that JAR will be searched for all the
+classes that are annotated with @Entity, @MappedSuperclass or @Embeddable.
+
+This method is clearly the simplest way to cause a class to be included because all that has to be
+done is to put the annotated classes into a JAR and add the persistence.xml file in the META-INF directory
+of the JAR. The provider will take care of going through the classes and finding the entities.
+
+Classes in Mapping Files 
+
+
+
+
+
+
+

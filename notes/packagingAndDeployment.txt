@@ -133,8 +133,125 @@ of the JAR. The provider will take care of going through the classes and finding
 
 Classes in Mapping Files 
 
+Any class that has an entry in a mapping file will also be considered a managed class in the persistence
+unit. It need only be named in an entity, mapped-superclass, or embeddable element in one of the
+mapping files. The set of all the classes from all the listed mapping files (including the implicitly
+processed orm.xml file) will be added to the set of managed classes in the persistence unit.
+
+Nothing
+special has to be done apart from ensuring that the classes named in a mapping file are on the classpath
+of the unit being deployed. If they are in the deployed component archive, they will likely already be on
+the classpath. But if they aren’t, they must be explicitly included in the classpath.
+
+Explicitly Listed Classes
+
+When the persistence unit is small or when there is not a large number of entities, you may want to list
+classes explicitly in class elements in the persistence.xml file. This will cause the listed classes to be
+added to the persistence unit.
 
 
+Since a class that is local to the deployment unit will already be included, we don’t need to list it in a
+class element. Explicitly listing the classes is really useful in three main cases.
+The first is when there are additional classes that are not local to the deployment unit JAR. For
+example, there is an embedded object class in a different JAR that you want to use in an entity in your
+persistence unit. You would list the fully qualified class in the class element in the persistence.xml file.
+You will also need to ensure that the JAR or directory that contains the class is on the classpath of the
+deployed component, for example, by adding it to the manifest classpath of the deployment JAR.
+In the second case, we want to exclude one or more classes that may be annotated as an entity. Even
+though the class may be annotated with @Entity, we don’t want it to be treated as an entity in this
+particular deployed context. For example, it may be used as a transfer object and need to be part of the
+deployment unit. In this case, we need to make use of a special element called exclude-unlistedclasses
+in the persistence.xml file, which disables local classes from being added to the persistence
+unit. When exclude-unlisted-classes is used, none of the classes in the local classes category described
+earlier will be included.
+
+The third case is when we expect to be running the application in a Java SE environment and when
+we list the classes explicitly because that is the only portable way to do so in Java SE.
+
+Additional JARs of managed classes (p. 441)
+
+The last way to get managed classes included in the persistence unit is to add them to another JAR and
+specify the name of the JAR in a jar-file element in the persistence.xml.
+
+The jar-file element is used
+to indicate to the provider a JAR that may contain annotated classes. The provider will then treat the
+named JAR as if it were a deployment JAR, and it will look for any annotated classes and add them to the
+persistence unit. It will even search for an orm.xml file in the META-INF directory in the JAR and process it
+just as if it were an additionally listed mapping file.
+
+When listing a JAR in a jar-file element, it must be listed relative to the parent of the JAR file in
+which the META-INF/persistence.xml file is located.
+
+emp.ear
+  emp-ejb.jar
+    META-INF/persistence.xml
+  lib/emp-classes.jar
+    examples/model/Employee.class
+
+<persistence-unit name="EmployeeService">
+  <jta-data-source>java:app/jdbc/EmployeeDS</jta-data-source>
+  <jar-file>lib/emp-classes.jar</jar-file>
+</persistence-unit>
+
+
+
+Shared Cache Mode
+----------------------------------------------------------
+The shared-cache-mode element is optional, but when specified it may be set to one of the five
+options:
+
+UNSPECIFIED The provider chooses whatever option is most appropriate for that provider.
+ALL Cache all the entities in the persistence unit.
+NONE Do not cache any of the entities in the persistence unit.
+DISABLE_SELECTED Cache all entities except those annotated with @Cacheable(false).
+ENABLE_SELECTED Cache no entities except those annotated with @Cacheable(true).
+
+Validation Mode
+The validation-mode element in the persistence.xml file determines whether validation is enabled or not.
+
+It may be set to AUTO, meaning that in the
+container environment validation is enabled, but when not running in the container, validation will be
+enabled only if there is a validation provider available. Setting it to CALLBACK will enable validation and
+assume that a validation provider is on the classpath.
+
+The default is AUTO, which enables validation, so if you do not intend to use validation we
+recommend that you explicitly disable it by setting the validation-mode element to NONE. This will bypass
+the validation provider checks and prevent you from incurring any validation overhead if at some point
+later on a provider happens to show up on the classpath.
+
+Adding Vendor Properties
+The properties element gives a deployer the chance to supply standard and 
+provider-specific settings for the persistence unit. To
+guarantee runtime compatibility, a provider must ignore properties it does not understand
+
+<persistence-unit name="EmployeeService">
+  ...
+  <properties>
+    <property name="eclipselink.logging.level" value="FINE"/>
+    <property name="eclipselink.cache.size.default" value="500"/>
+  </properties>
+</persistence-unit>
+
+
+
+------------------------------------------------------------------------------------------------
+Building and Deploying (443)
+
+application.xml:
+
+<application ... >
+  ...
+  <library-directory>myDir/jars</library-directory>
+</application>
+
+When you are deploying a WAR and want to put an additional JAR of entities on the classpath, you
+can put the JAR in the WEB-INF/lib directory of the WAR. This causes the JAR to be on the classpath, and
+the classes in it are accessible to all the classes in the WAR.
+
+-----------------------------------------------------------------------------------------------
+Packaging options: EJB Modules, web modules, and persistence archives.
+
+EJB Jar:
 
 
 

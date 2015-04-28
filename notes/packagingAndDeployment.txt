@@ -252,7 +252,361 @@ the classes in it are accessible to all the classes in the WAR.
 Packaging options: EJB Modules, web modules, and persistence archives.
 
 EJB Jar:
+Session beans have traditionally been deployed in an EJB JAR, although in Java EE 6 they
+may also be deployed in a WAR with web components.
+
+As of EJB 3.0, you no longer need to have an ejb-jar.xml deployment descriptor, but if you choose
+to use one, it must be in the META-INF directory. When defining a persistence unit in an EJB JAR, the
+persistence.xml file is not optional. It must be created and placed in the META-INF directory of the JAR
+alongside the ejb-jar.xml deployment descriptor, if it exists. Although the existence of persistence.xml
+is required, the contents may be very sparse indeed; in some cases including only the name of the
+persistence unit.
+
+The simplest approach is to
+simply dump our managed classes into the EJB JAR along with the EJB components.
+As long as the managed classes are correctly annotated, 
+they will be automatically discovered by the provider at deployment time and added to the persistence unit.
 
 
+If we wanted to separate the entities from the EJB components, we could put them in a different JAR
+and reference that JAR in a jar-file entry in the persistence.xml file.
 
+<persistence-unit>
+  <jar-file>lib/emp-classes.jar</jar-file>
+</persistence-unit>
+
+Web Archive (446)
+-------------------------------------------------------------------------------------------------------
+use session beans as the objects referenced by the web
+tier, however, and the easiest way to facilitate this is to deploy the web components, EJBs, and
+persistence unit all in a WAR file. This not only simplifies the organization of the deployment structure
+but also provides a more practical scope for the application. By using the WAR as the deployment
+vehicle for all three code tiers, the EJB JAR and EAR units become unnecessary, and the WAR becomes
+the new EAR equivalent
+
+In a WAR, the persistence unit root depends upon where the persistence unit is located
+within the WAR. The obvious choice is to use the WEB-INF/classes directory as the root, which would
+lead us to place the persistence.xml file in the WEB-INF/classes/META-INF directory. Any annotated
+managed classes rooted in the WEB-INF/classes directory will be detected and added to the persistence
+unit. Similarly, if an orm.xml file is located in WEB-INF/classes/META-INF, it will be processed. The web
+components and EJBs are also placed in the classes directory.
+
+emp.war
+WEB-INF/web.xml
+WEB-INF/classes/META-INF/persistence.xml
+WEB-INF/classes/META-INF/orm.xml
+WEB-INF/classes/examples/web/EmployeeServlet.class
+WEB-INF/classes/examples/ejb/EmployeeService.class
+WEB-INF/classes/examples/ejb/EmployeeServiceBean.class
+WEB-INF/classes/examples/model/Employee.class
+WEB-INF/classes/examples/model/Phone.class
+WEB-INF/classes/examples/model/Address.class
+WEB-INF/classes/examples/model/Department.class
+WEB-INF/classes/examples/model/Project.class
+
+If
+we need to add another mapping file then we can put it anywhere on the deployment unit classpath. We
+just need to add a mapping-file element to the persistence.xml file. If, for example, we put empmapping.
+xml in the WEB-INF/classes/mapping directory, we would add the following element to the
+persistence.xml file:
+
+<mapping-file>mapping/emp-mapping.xml</mapping-file>
+
+Since the WEB-INF/classes directory is automatically on the classpath of the WAR, the mapping file
+is specified relative to that directory.
+
+Persistence Archive
+-------------------------------------------------------------
+If we want to allow a persistence unit to be shared or accessible by multiple components, either in
+different Java EE modules or in a single WAR, we should use a persistence archive. It also promotes good
+design principles by keeping the persistence classes together.
+
+By placing a persistence
+archive in the lib directory of an EAR, or in the WEB-INF/lib directory of a WAR, we can make it available
+to any enclosed component that needs to operate on the entities defined by its contained persistence
+unit.
+
+The persistence archive is simple to create and easy to deploy. It is simply a JAR that contains a
+persistence.xml in its META-INF directory and the managed classes for the persistence unit defined by
+the persistence.xml file.
+
+The external JAR would be referenced by the
+persistence.xml file as a jar-file entry with the same rules for specification as were described in the
+other cases.
+
+This is neither recommended nor useful, though, since the persistence archive itself is
+already separated from the other component classes. Seldom will there be a reason to create yet
+another JAR to store the managed classes, but there may be a case when the other JAR is pre-existing,
+
+Persistence archives are actually a very tidy way of packaging a persistence unit. By keeping them
+self-contained (if they do not reference external JARs of classes using jar-file entries), they do not
+depend on any other components of the application but can sit as a layer underneath those components
+to be used by them.
+
+Persistence Unit Scope (448)
+---------------------------------------------------------
+Any number of persistence units may be defined in the same persistence.xml file and used in the scope within which
+they were defined.
+
+local classes in the same archive will be processed by default. If
+multiple persistence units are defined in the same persistence.xml file, and exclude-unlisted-classes
+is not used on either one, the same classes will be added to all the defined persistence units.
+
+Rules:
+The first rule is that persistence units are accessible only within the scope of their definition.
+
+In fact, in general a persistence unit defined from an EJB JAR is seen by EJB components defined by that EJB JAR, and a
+persistence unit defined in a WAR will be seen only by the components defined within that WAR.
+Persistence units defined in a persistence archive that lives in the EAR will be seen by all the components
+in the application.
+
+The next part is that the names of persistence units must be unique within their scope. For example,
+there may be only one persistence unit of a given name within the same EJB JAR. Likewise there may be
+only one persistence unit of a given name in the same WAR, as well as only one persistence unit of the
+same name in all the persistence archives at the EAR level. There may be a named persistence unit name
+in one EJB JAR and another that shares its name in another EJB JAR, or there may even be a persistence
+unit with the same name in an EJB JAR as there is in a persistence archive. It just means that whenever a
+persistence unit is referenced either within a @PersistenceContext, a @PersistenceUnit annotation, or a
+createEntityManagerFactory() method, the most locally scoped one will get used.
+
+
+Just because it’s possible to have multiple
+persistence units with the same name in different component archive namespaces doesn’t mean that it
+is a good idea. As a general rule, you should always give persistence units unique names within the
+application.
+
+-------------------------------------------------------------------------------
+Outside the server
+
+Deploying in Java SE environment.
+
+Transaction type: 
+When running in a server environment, the transaction-type attribute in the persistence unit defaults
+to being JTA. The JTA transaction layer was designed for use within the Java EE server and is intended to
+be fully integrated and coupled to the server components. Given this fact, JPA does not provide support
+for using JTA outside the server. Some providers may offer this support, but it cannot be portably relied
+upon, and of course it relies upon the JTA component being present.
+The transaction type does not normally need to be specified when deploying to Java SE. It will just
+default to being RESOURCE_LOCAL, but may be specified explicitly to make the programming contract more
+clear.
+
+Data Source
+When configuring for outside the server, not only can we not rely upon JTA, as we described in the
+transaction type section, but we cannot rely upon JNDI at all. We therefore cannot portably rely upon
+either of the data source elements in Java SE configurations.
+
+When using resource-local transactions outside the server, the provider obtains database
+connections directly vended out by the JDBC driver. In order for it to get these connections, it must
+obtain the driver-specific information, which typically includes the name of the driver class, the URL
+that the driver uses to connect to the database, and the user and password authentication that the driver
+also passes to the database. This metadata may be specified in whichever way the provider prefers it to
+be specified, but all vendors must support the standard JDBC properties in the properties section.
+
+<persistence-unit name="EmployeeService">
+...
+<properties>
+<property name="javax.persistence.jdbc.driver"
+value="org.apache.derby.jdbc.ClientDriver"/>
+<property name="javax.persistence.jdbc.url"
+value="jdbc:derby://localhost:1527/EmpServDB;create=true"/>
+<property name="javax.persistence.jdbc.user"
+value="APP"/>
+<property name="javax.persistence.jdbc.password"
+value="APP"/>
+</properties>
+</persistence-unit>
+
+---------------------------------------------------------------------
+Providers
+
+Many servers will have a default or native provider that they will use when the provider is not specified.
+It will automatically call into that provider to create an EntityManagerFactory at
+deployment time.
+
+When not in a server, the factory is created programmatically using the Persistence class. When the
+createEntityManagerFactory() method is invoked, the Persistence class will begin a built-in
+pluggability protocol that goes out and finds the provider that is specified in the persistence unit
+configuration. If none was specified, the first one that it finds will be used. Providers export themselves
+through a service that exists in the provider JAR that must be on the classpath. The net result is that the
+provider element is not required.
+
+In the majority of cases when only one provider will be on the classpath, the provider will be
+detected and used by the Persistence class to create an EntityManagerFactory for a given persistence
+unit. If you are ever in a situation in which you have two providers on the classpath and you want a
+particular one to be used, you should specify the provider class in the provider element. To prevent
+runtime and deployment errors, the provider element should be used if the application has a code
+dependency on a specific provider.
+
+--------------------------------------------------------------------------
+Listing the Entities
+
+The problem with this kind of detection outside the server is that the Java SE environment permits
+all kinds of different class resources to be added to the classpath, including network URLs or any other
+kind of resource that is acceptable to a classloader. There are no official deployment unit boundaries
+that the provider is aware of. This makes it difficult for JPA to require providers to support doing
+automatic detection of the managed classes inside a persistence archive.
+
+The official position of the API
+is that for an application to be portable across all vendors it must explicitly list all the managed classes in
+the persistence unit using class elements.
+
+
+Any of the major providers actually do support
+detecting the classes outside the server. This is really kind of an essential usability issue since the
+maintenance of a class list would be so cumbersome as to be a productivity bottleneck unless you had a
+tool manage the list for you.
+
+A corollary to the official portability guideline to use class elements to enumerate the list of
+managed classes is that the exclude-unlisted-classes element is not guaranteed to have any impact in
+Java SE persistence units. Some providers may allow this element to be used outside the server, but it is
+not really very useful in the SE environment anyway given the flexibility of the classpath and packaging
+allowances in that environment.
+
+-----------------------------------------------------------------------
+Specifying properties at runtime:
+
+One of the benefits of running outside the server is the ability to specify provider properties at runtime.
+
+This is available because of the overloaded createEntityManagerFactory() method that accepts a Map of
+properties in addition to the name of the persistence unit.
+
+The properties passed to this method are
+combined with those already specified, normally in the persistence.xml file. They may be additional
+properties or they may override the value of a property that was already specified. This may not seem
+very useful to some applications, since putting runtime configuration information in code is not
+normally viewed as being better than isolating it in an XML file. However, one can imagine this being a
+convenient way to set properties obtained from a program input, such as the command line, as an even
+more dynamic configuration mechanism.
+
+public class EmployeeService {
+  public static void main(String[] args) {
+    Map props = new HashMap();
+    props.put("javax.persistence.jdbc.user", args[0]);
+    props.put("javax.persistence.jdbc.password", args[1]);
+
+    EntityManagerFactory emf = Persistence.createEntityManagerFactory("EmployeeService", props);
+    // ...
+    emf.close();
+}
+}
+
+------------------------------------------------
+System Classpath:
+
+In some ways, configuring a persistence unit in a Java SE application is actually easier than configuring
+in the server because the classpath is simply the system classpath. Adding classes or jars on the system
+classpath is a trivial exercise.
+
+---------------------------------------------------
+Schema Generation
+Most JPA vendors support some kind of schema generation either in the runtime or in a tool.
+
+One of the complaints around schema generation is that you can’t specify everything that you need
+to be able to finely tune the schema. This was done on purpose. There are too many differences between
+databases and too many different settings to try to put in options for every database type. If every
+database-tuning option were exposed through JPA then we would end up duplicating the features of
+Data Definition Language (DDL) in an API that was not meant to be a database schema generation
+facility. As we mentioned earlier, the majority of applications find themselves in a meet-in-the-middle
+mapping scenario in any case, and when they do have control over the schema, the final schema will
+typically be tuned by a database administrator or someone with the appropriate level of database
+experience.
+
+Unique Constraints:
+A unique constraint can be created on a generated column or join column by using the unique element
+in the @Column or @JoinColumn annotations.
+
+@Id private int id;
+@Column(unique=true)
+private String name;
+
+Note that the unique element is unnecessary on the identifier column because a primary key
+constraint will always be generated for the primary key.
+
+A second way of adding a unique constraint is to embed one or more @UniqueConstraint
+annotations in a uniqueConstraints element in the @Table or @SecondaryTable annotations. Any number
+of unique constraints may be added to the table definition, including compound constraints. The value
+passed to the @UniqueConstraint annotation is an array of one or more strings listing the column names
+that make up the constraint.
+
+@Entity
+@Table(name="EMP",
+    uniqueConstraints=@UniqueConstraint(columnNames={"NAME"}))
+public class Employee {
+  @Id private int id;
+  private String name;
+  // ...
+}
+
+
+Null Constraints:
+A null constraint just indicates that
+the column may or may not be null. It is defined when the column is declared as part of the table.
+
+@Column(nullable=false)
+private String name;
+@ManyToOne
+@JoinColumn(nullable=false)
+private Address address;
+
+String-based Columns:
+When no length is specified for a column that is being generated to store string values, the length will be
+defaulted to 255.
+
+When a column is generated for a basic mapping of a field or property of type String,
+char[], or Character[], its length should be explicitly listed in the length element of the @Column
+annotation if 255 is not the desired maximum length.
+
+@Column(length=40)
+private String name;
+
+There is no similar length element in the @JoinColumn
+annotation. When primary keys are string-based, the provider may set the join column length to the
+same length as the primary key column in the table that is being joined to. This is not required to be
+supported, however.
+It is not defined for length to be used for large objects; some databases do not require or even allow
+the length of lobs to be specified.
+
+Floating Point Columns
+Columns containing floating point types have a precision and scale associated with them. The precision
+is just the number of digits that are used to represent the value, and the scale is the number of digits after
+the decimal point.
+
+These two values may be specified as precision and scale elements in the @Column
+annotation when mapping a floating point type. Like other schema generation elements, they have no
+effect on the entity at runtime.
+
+@Column(precision=8, scale=2)
+private float hourlyRate;
+
+----------------------------------------------------------------
+Defining the column
+
+There may be a time when you are happy with all the generated columns except for one. The type of the
+column isn’t what you want it to be, and you don’t want to go through the trouble of manually
+generating the schema for the sake of one column. This is one instance when the columnDefinition
+element comes in handy. By hand-rolling the DDL for the column, we can include it as the column
+definition and let the provider use it to define the column.
+
+The columnDefinition element is available in all the column-oriented annotation types, including
+@Column, @JoinColumn, @PrimaryKeyJoinColumn, @MapKeyColumn, @MapKeyJoinColumn, @OrderColumn, and
+@DiscriminatorColumn. Whenever a column is to be generated, the columnDefinition element may be
+used to indicate the DDL string that should be used to generate the type (not including the trailing
+comma).It also allows a database-specific type or format to be used that may supersede the generated
+type offered by the provider for the database being used.
+
+@Id
+@Column(columnDefinition="NVARCHAR2(40)")
+private String name;
+@Column(name="START_DATE",
+columnDefinition="DATE DEFAULT SYSDATE")
+private java.sql.Date startDate;
+
+Specifying the column definition is quite a powerful schema generation practice that allows
+overriding of the generated column to an application-defined custom column definition. But the power
+is accompanied by some risk as well. When a column definition is included, other accompanying
+column-specific generation metadata is ignored. Specifying the precision, scale, or length in the same
+annotation as a column definition would be both unnecessary and confusing.
+Not only does using columnDefinition in your code bind you to a particular schema but it also binds
+you to a particular database since the DDL tends to be database-specific. This is just a flexibilityportability
+trade-off, and you have to decide whether it is appropriate for your application.
 

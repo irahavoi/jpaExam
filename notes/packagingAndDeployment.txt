@@ -1,2 +1,34 @@
 Packaging and Deployment (p. 435)
 ----------------------------------------------------
+persistence.xml - primary coonfig file - defines persistence units.
+
+Since there is one EntityManagerFactory for each persistence unit, you
+can think of the configuration of the persistence unit as the configuration of the factory for that
+persistence unit
+
+While some providers might still require an additional providerspecific
+configuration file, most will also support their properties being specified within the properties
+section (described in the “Adding Vendor Properties” section) of the persistence.xml file.
+The persistence.xml file is the first step to configuring a persistence unit. All the information
+required for the persistence unit should be specified in the persistence.xml file. Once a packaging
+strategy has been chosen, the persistence.xml file should be placed in the META-INF directory of the
+chosen archive.
+Each persistence unit is defined by a persistence-unit element in the persistence.xml file. All the
+information for that persistence unit is enclosed within that element. The following sections describe the
+metadata that a persistence unit may define when deploying to a Java EE server.
+
+Persistence Unit Name (436)
+Every persistence unit must have a name that uniquely identifies it within the scope of its packaging.
+
+if a persistence unit is defined
+within a Java EE module, there must not be any other persistence unit of the same name in that module.
+For example, if a persistence unit named “EmployeeService” is defined in an EJB JAR named
+emp_ejb.jar, there should not be any other persistence units named “EmployeeService” in emp_ejb.jar.
+
+<persistence-unit name="EmployeeService"/>
+
+It may be all that is
+needed if the server defaults the remaining information, but not all servers will do this. Some may
+require other persistence unit metadata to be present, such as the data source to be accessed.
+
+Transaction Type (436)

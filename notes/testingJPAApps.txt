@@ -1,2 +1,267 @@
 Testing (457)
 ---------------------------------------------------------------
+One of the major selling points of JPA and EJB 3.0 has been the drive toward better testability. The use of
+plain Java classes where possible as well as the ability to use persistence outside of the application server
+has made enterprise applications much easier to test.
+
+Applications developed before the Java EE 5 release are tightly coupled to the application server, often
+making it difficult and counterproductive to attempt replicating the required container services in a
+stand-alone environment.
+
+Dependency lookup was the only option in EJB 2.1, so if the business method has to access JNDI to
+obtain a reference to the other session bean, either JNDI must be worked around or the bean class must
+be refactored so that the lookup code can be replaced with a test-specific version.
+
+The dirty secret of many applications written using older versions of Java EE is that there is little to
+no developer testing at all. Developers write, package, and deploy applications; test them manually
+through the user interface; and then hope that the quality assurance group can write a functional test
+that verifies each feature. It’s just too much work to test individual components outside of the
+application server.
+
+Starting with EJB 3.0, a session bean class is a simple Java class
+that implements a regular Java interface, and in EJB 3.1 even the interface is no longer required for local
+beans. No special EJB interfaces need to be extended or implemented. To unit test the logic in a session
+bean, we can usually just implement it and execute it. If the bean depends on another bean, we can
+instantiate that bean and manually inject it into the bean being tested. The EJB 3.0 release was designed
+to encourage testing by breaking the hard dependencies between application code and the application
+server.
+
+Likewise entities are a world apart from container-managed entity beans. If your session bean uses
+an entity, you can just instantiate it and use it like any other class. If you are testing code that uses the
+entity manager and want to verify that it is interacting with the database the way you expect it to, just
+bootstrap the entity manager in Java SE and make full use of the entity manager outside of the
+application server.
+
+------------------------------------------------------------------------
+Testing Entities.
+The most likely test candidate for entities is not the entity but the application code that uses the entity as
+part of its business logic. For many applications this means testing session beans, managed beans and
+other Java EE components.
+
+Entity manager in Unit Tests:
+
+There are two basic approaches to dealing with the presence of
+standard interfaces:
+• Introduce a subclass that replaces methods containing entity manager or query
+operations with test-specific versions that do not interact with JPA.
+• Provide custom implementations of standard interfaces that may be predictably
+used for testing.
+
+Integration testing:
+
+Example:
+
+@Before
+public void setUp() {
+emf = Persistence.createEntityManagerFactory("hr");
+em = emf.createEntityManager();
+createTestData();
+}
+@After
+public void tearDown() {
+if (em != null) {
+removeTestData();
+em.close();
+}
+if (emf != null) {
+emf.close();
+}
+}
+private void createTestData() {
+User user = new User();
+user.setName(USER_ID);
+user.setPassword(PASSWORD);
+em.getTransaction().begin();
+em.persist(user);
+em.getTransaction().commit();
+}
+private void removeTestData() {
+em.getTransaction().begin();
+User user = em.find(User.class, USER_ID);
+if (user != null) {
+em.remove(user);
+}
+em.getTransaction().commit();
+}
+@Test
+public void testAuthenticateValidUser() throws Exception {
+UserServiceBean service = new UserServiceBean();
+service.em = em;
+User user = service.authenticate(USER_ID, PASSWORD);
+Assert.assertNotNull(user);
+
+
+
+
+Clearing cache:
+public static void clearCache(EntityManagerFactory emf) {
+emf.getCache().evictAll();
+}
+
+
+Switching configuration environment:
+
+The first is to specify properties in the persistence.xml
+file that are specific to testing. For many developers, this will mean providing JDBC connection
+information to a local database so that tests do not collide with other developers on a shared database.
+The second major use of a custom persistence.xml file is to customize the database mappings for
+deployment on a completely different database platform. For example, if Oracle is your production
+database and you don’t want to run the full database4 on your local machine, you can adjust the
+mapping information to target an embedded database such as Apache Derby.
+
+
+
+Minimizing Database Connections:
+Remember that junit instantiates a new instance of test class with each test method call.
+Use @BeforeClass and @AfterClass features of JUnit 4 may be used to create
+fixtures that run only once for all of the tests in a class:
+
+@BeforeClass
+public static void setUpBeforeClass() throws Exception {
+emf = Persistence.createEntityManagerFactory("hr");
+}
+@AfterClass
+public static void tearDownAfterClass() throws Exception {
+if (emf != null) { emf.close(); }
+}}
+
+The setUp() method of each test case now only needs to reference this class to obtain the factory instead
+of creating it each time.
+
+@Before
+public void setUp() {
+emf = DatabaseTest.emf;
+em = emf.createEntityManager();
+createTestData();
+}
+
+but care must be
+taken to ensure that side effects from one test do not accidentally interfere with the execution of other
+tests. Because all tests share the same entity manager factory, data may be cached or settings may be
+changed (supported by some entity manager factories) that have an unexpected impact later on. Just as
+it is necessary to keep the database tables clean between tests, any changes to the entity manager factory
+must be reverted when the test ends, regardless of whether the outcome is a success or a failure.
+
+
+--------------------------------------------------------------------------------------------------------------
+Transaction Management (473)
+
+Except for resource-local, application-managed entity managers, which are rarely used in the Java EE
+environment, transaction management is the purview of session beans and other components that use
+JPA.
+
+The transaction demarcation for a session bean method needs to be considered carefully when
+writing tests. Despite the default assumption that transactions are used everywhere in the application
+server, only a select number of methods actually require transaction management for the purpose of
+testing.
+
+In a test environment, we are using resource-local, application-managed entity managers.
+an application-managed entity manager can perform all its operations without an
+active transaction.
+
+In effect, invoking persist() queues up the entity to be persisted the next time a
+transaction starts and is committed. Furthermore, we know that once an entity is managed, it can
+typically be located using the find() operation without the need to go to the database. Given these facts,
+we generally need a transacted entity manager only if the business method creates or modifies entities,
+and executes a query that should include the results.
+
+Although not required to satisfy business logic, a transaction may also be required if you want the
+results of the operation to be persisted so that they can be analyzed using something other than the
+active entity manager. For example, the results of the operation can be read from the database using
+JDBC and compared to a known value using a test tool.
+
+Container-Managed Transactions
+One of the most important benefits of container-managed transactions is that they are configured for
+session bean methods entirely using metadata. There is no programming interface invoked by the
+session bean to control the transaction other than the setRollbackOnly() method on the EJBContext
+interface, and even this occurs only in certain circumstances. Therefore, once we decide that a particular
+bean method requires a transaction to be active, we need only start a transaction at the start of the test
+and commit or roll back the results when the test ends.
+
+@Test
+public void testAssignEmployeeToDepartment() throws Exception {
+DepartmentServiceBean bean = new DepartmentServiceBean();
+bean.em = em;
+em.getTransaction().begin();
+List result = bean.assignEmployeeToDepartment(700, 500);
+em.getTransaction().rollback();
+Assert.assertEquals(2, result.size());
+Assert.assertEquals("John", ((Employee)result.get(0)).getName());
+Assert.assertEquals("Scott", ((Employee)result.get(1)).getName());
+}
+
+
+
+Container-Managed Entity Managers (478)
+Using an Embedded EJB Container for Integration Testing
+When multiple session beans collaborate to implement a particular application use case, a lot of
+scaffolding code may be required to get things up and running. If multiple test cases share similar graphs
+of session beans, some or all of this code may have to be duplicated across multiple test cases. Ideally,
+we want a framework to assist with issues such as dependency injection in our test environment.
+Fortunately, EJB supports just such a container. An embedded EJB container supports EJB Lite, a
+subset of the overall EJB feature set. EJB Lite includes support for local session beans, interceptors,
+container-managed transactions (assuming the availability of a stand-alone JTA transaction manager
+implementation) and security, and JPA, but does not include support for remote session beans,
+message-driven beans, web service endpoints, timers, or asynchronous session beans.
+
+Bootstrapping the embedded container is straightforward. You compile and package the classes as
+normal into an EJB jar file and add that jar file to the test classpath in order for the embedded container
+bootstrap mechanism to locate it. The static createEJBContainer() method of the
+javax.ejb.embeddable.EJBContainer class can then be used to create an EJB container and load the
+module from the classpath.
+
+public class TestEmployeeServiceBean {
+private EJBContainer container;
+@Before
+public void setUp() {
+container = EJBContainer.createEJBContainer();
+}
+@After
+public void tearDown() {
+container.close();
+}
+// ...
+}
+
+Listing 14-21. Acquiring a Session Bean Reference from an Embedded EJB Container
+public class TestEmployeeServiceBean extends TestCase {
+private EJBContainer container;
+// ...
+private EmployeeService getServiceBean() throws Exception {
+return (EmployeeService)
+container.getContext().lookup("java:global/hr/EmployeeServiceBean");
+}
+private EntityManager getEntityManager() throws Exception {
+return (EntityManager) container.getContext().lookup("java:global/hr/HRService");
+}
+// ...
+}
+
+With access to a live session bean, we can now write test methods as if we were running code
+directly within the application server.
+
+Best Practices
+
+• Avoid using the entity manager from within entity classes. This creates a tight
+coupling between the domain object and the persistence API, making testing
+difficult. Queries that are related to an entity, but not part of its object-relational
+mapping, are better executed within a session façade or data access object.
+• Prefer dependency injection to JNDI lookups in session beans. Dependency
+injection is a key technology for simplifying tests. Instead of mocking the JNDI
+interfaces to provide runtime support for unit testing, the required values can be
+directly assigned to the object using a setter method or field access. Note that
+accessing private fields from a test case is bad form. Either use package private
+fields as the target for injected objects or provide a setter method.
+• Isolate persistence operations. Keeping EntityManager and Query operations
+separate in their own methods makes replacing them easier during unit testing.
+• Decouple with interfaces. Just as JPA uses interfaces to minimize dependencies
+on the persistence provider, loosely coupled components with interfaces can help
+manage complex dependencies.
+• Refactor when necessary. Don’t be afraid to refactor application code to make it
+more test-friendly so long as the refactoring benefits the application as a whole.
+Method extraction, parameter introduction, and other refactoring techniques can
+help break down complex application logic into testable chunks, improving the
+overall readability and maintainability of the application in the process.
+
+
+

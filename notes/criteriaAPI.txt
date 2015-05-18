@@ -453,6 +453,57 @@ Strongly typed API overview (295):
 
 Canonical Metamodel)???
 
+The metamodel of a
+persistence unit is a description of the persistent type, state, and relationships of entities, embeddables,
+and managed classes. With it, we can interrogate the persistence provider runtime to find outinformation about the classes in a persistence unit. A wide variety of information, from names to types
+to relationships, is stored by the persistence provider and made accessible through the metamodel API.
+
+Metamodel mm = entityManager.getMetamodel();
+EntityType<Employee> emp_ = mm.entity(Employee.class);
+
+
+The equivalent methods for embeddables and managed classes are embeddable() and managedType()
+respectively. It is important to note that the call to entity() in this example is not creating an instance of
+the EntityType interface. Rather it is retrieving a metamodel object that the persistence provider would
+have initialized when the EntityManagerFactory for the persistence unit was created. Had the class
+argument to entity() not been a pre-existing persistent type, an IllegalArgumentException would have
+been thrown.
+
+The canonical metamodel consists of dedicated classes, typically generated, one per persistent
+class, that contain static declarations of the metamodel objects associated with that persistent class. This
+allows you to access the same information exposed through the metamodel API, but in a form that
+applies directly to your persistent classes.
+
+Example of a canonical metamodel class:
+
+@StaticMetamodel(Employee.class)
+public class Employee_ {
+  public static volatile SingularAttribute<Employee, Integer> id;
+  public static volatile SingularAttribute<Employee, String> name;
+  public static volatile SingularAttribute<Employee, String> salary;
+  public static volatile SingularAttribute<Employee, Department> dept;
+  public static volatile SingularAttribute<Employee, Address> address;
+  public static volatile CollectionAttribute<Employee, Project> project;
+  public static volatile MapAttribute<Employee, String, Phone> phones;
+}
+
+
+A canonical metamodel class is generated in the same package as its associated persistent class and
+has the same name, but with an additional underscore suffix. Non-canonical metamodel classes may be
+generated in other packages and with different names if there is a need to do so. Some generation tools
+may provide these kinds of options. The @StaticMetamodel annotation provides the binding between the
+metamodel class and the entity, not the name or package, so there is no standard way of reading in such
+metamodels.
+
+The canonical
+metamodel classes will need to be updated or regenerated when certain changes to entities have
+occurred during development. For example, changing the name of a field or property, or changing its
+shape, would require an updated canonical metamodel class for that entity.
+
+
+
+
+
 
 
 

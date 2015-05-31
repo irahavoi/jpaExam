@@ -1,0 +1,62 @@
+@GeneratedValue
+
+id generation strategies:
+GenerationType.AUTO,
+GenerationType.TABLE,
+GenerationType.SEQUENCE,
+GenerationType.IDENTITY
+
+@TableGenerator
+
+There are two important points to remember when defining bidirectional one-to-many (or
+many-to-one) relationships:
+• The many-to-one side is the owning side, so the join column is defined on that
+side.
+• The one-to-many mapping is the inverse side, so the mappedBy element must be
+used.
+
+
+
+@ManyToMany
+@JoinTable(name="EMP_PROJ",
+joinColumns=@JoinColumn(name="EMP_ID"),
+inverseJoinColumns=@JoinColumn(name="PROJ_ID"))
+private Collection<Project> projects;
+
+
+The join column to the owning side is described in the joinColumns element, while the join column to the
+inverse side is specified by the inverseJoinColumns element.
+
+When not specified
+on a single-valued relationship, the related object is guaranteed to be loaded eagerly. Collectionvalued
+relationships default to be lazily loaded, but because lazy loading is only a hint to the provider,
+they can be loaded eagerly if the provider decides to do so.
+
+@OneToOne(fetch=FetchType.LAZY)
+private ParkingSpace parkingSpace;
+
+Mapping Maps:
+
+@MapKeyColumn, which is used to indicate the column in the collection
+table that stores the basic key. When the annotation is not specified, the key is stored in a column named
+after the mapped collection attribute, appended with the “_KEY” suffix. In Listing 5-7, if we had not
+specified @MapKeyColumn, the defaulting rule would have caused the key to be mapped to the
+PHONENUMBERS_KEY column in the EMP_PHONE collection table.
+
+@MapKeyEnumerated(EnumType.STRING) <- for enums
+
+
+Keying by entity attribute is actually a
+special case of keying by basic type where the mapping is a relationship, and the basic type of the key is
+the type of the attribute (that we are keying on) in the target entity. When this common case
+occurs, the @MapKey annotation can be used to designate the attribute of the target entity that is being
+keyed on.
+
+@Entity
+public class Department {
+// ...
+@OneToMany(mappedBy="department")
+@MapKey(name="id")
+private Map<Integer, Employee> employees;
+// ...
+}
